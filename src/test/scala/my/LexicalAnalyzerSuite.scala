@@ -1,6 +1,5 @@
 package my
 
-import my.lexemeType
 import org.scalatest.FunSuite
 
 import scala.collection.mutable.ArrayBuffer

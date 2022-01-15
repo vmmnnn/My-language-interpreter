@@ -55,6 +55,7 @@ class LexicalAnalyzer {
 	 */
 	def run(program: String): Unit = {
 		for (symbol <- program) {
+			symbolNumber += 1
 			processSymbol(symbol)
 		}
 		processSymbol(' ')  // to finalize
@@ -65,7 +66,6 @@ class LexicalAnalyzer {
 	 * @param symbol next symbol of the program
 	 */
 	private def processSymbol(symbol: Char): Unit = {
-		symbolNumber += 1
 		state match {
 			case States.H => processHState(symbol)
 			case States.CommentLine => processCommentLineState(symbol)
