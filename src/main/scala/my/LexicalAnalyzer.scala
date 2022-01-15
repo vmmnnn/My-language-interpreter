@@ -97,6 +97,15 @@ class LexicalAnalyzer {
 	}
 
 	/**
+	 * Digit arrived => number has started.
+	 * intNumberBuffer will accumulate the number
+	 */
+	private def processFirstNumberSymbol(symbol: Char): Unit = {
+		state = States.IntNumber
+		intNumberBuffer = symbol.toString.toInt
+	}
+
+	/**
 	 * Int number processing:
 	 * wait for a delimiter or for a '.' to move to DoubleNumber state
 	 * @param symbol next symbol of the program
@@ -125,6 +134,15 @@ class LexicalAnalyzer {
 	}
 
 	/**
+	 * Sets initial state when slash has arrived
+	 */
+	private def processFirstCommentLineSlashSymbol(): Unit = {
+		nCommentLineSlashes = 1
+		previousState = state
+		state = States.CommentLine
+	}
+
+	/**
 	 * Processes of the comment that starts from //:
 	 * skips current line and print an error message in case there is only one slash
 	 * @param symbol next symbol of the program
@@ -150,27 +168,17 @@ class LexicalAnalyzer {
 			System.err.println(getCommentErrorMessage())
 		}
 
-		def convertToDivisionOp(): Unit = {
+		def convertToDivisionOp(symbol: Char): Unit = {
 			state = States.ArithmeticSign
 			processArithmeticOpSymbol('/')
+			state = States.H
+			processSymbol(symbol)
 		}
 
 		symbol match {
 			case '\n' if (nCommentLineSlashes >= 2) => processEndOfCommentLine()
 			case '/' if (nCommentLineSlashes == 1) => nCommentLineSlashes = 2
-			case _ if (previousState == States.IntNumber | previousState == States.DoubleNumber) => convertToDivisionOp()
-			case _ if (nCommentLineSlashes < 2) => processCommentLineError()
-			case _ =>
-		}
-	}
-
-	/**
-	 * Ignores all symbols until '\n' arrives
-	 * @param symbol next symbol of the program
-	 */
-	private def processSkipLineState(symbol: Char): Unit = {
-		symbol match {
-			case '\n' => state = previousState
+			case _ if (nCommentLineSlashes < 2) => convertToDivisionOp(symbol)
 			case _ =>
 		}
 	}
@@ -185,12 +193,14 @@ class LexicalAnalyzer {
 	}
 
 	/**
-	 * Digit arrived => number has started.
-	 * intNumberBuffer will accumulate the number
+	 * Ignores all symbols until '\n' arrives
+	 * @param symbol next symbol of the program
 	 */
-	private def processFirstNumberSymbol(symbol: Char): Unit = {
-		state = States.IntNumber
-		intNumberBuffer = symbol.toString.toInt
+	private def processSkipLineState(symbol: Char): Unit = {
+		symbol match {
+			case '\n' => state = previousState
+			case _ =>
+		}
 	}
 
 	/**
@@ -211,15 +221,5 @@ class LexicalAnalyzer {
 		previousState = state
 		state = States.H
 	}
-
-	/**
-	 * Sets initial state when slash has arrived
-	 */
-	private def processFirstCommentLineSlashSymbol(): Unit = {
-		nCommentLineSlashes = 1
-		previousState = state
-		state = States.CommentLine
-	}
-
 
 }

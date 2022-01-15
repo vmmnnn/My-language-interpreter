@@ -8,6 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 class LexicalAnalyzerSuite extends FunSuite {
 	def sameLexemTables(table1: ArrayBuffer[(String, lexemeType.Value)],
 														table2: ArrayBuffer[(String, lexemeType.Value)]): Boolean = {
+		if (table1.length != table2.length) return false
 		table1.zip(table2).foreach(pair => {
 			if (pair._1._1 != pair._2._1) return false
 			if (pair._1._2 != pair._2._2) return false
@@ -33,7 +34,12 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val program = "/ //comment"
 		lexicalAnalyzer.run(program)
-		assert(lexicalAnalyzer.getState() == States.SkipLine)
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] =
+			ArrayBuffer(("/", lexemeType.ArithmeticOp))
+
+		assert(lexicalAnalyzer.getState() == States.CommentLine)
+		assert(sameLexemTables(expected, lexicalAnalyzer.lexemesTable))
 	}
 
 	test("comment: // /comment") {
@@ -79,13 +85,31 @@ class LexicalAnalyzerSuite extends FunSuite {
 	test("intNumber with comments to lexemes") {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val numStr = "254"
-		val program = "// comment 1\n" + numStr + "    // comment"
+		val program = "// comment 1\n" + numStr + "// comment"
 
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: ArrayBuffer[(String, lexemeType.Value)] =
 			ArrayBuffer((numStr, lexemeType.IntNumber))
+
+		assert(sameLexemTables(expected, lexemesTable))
+	}
+
+	test("intNumber / intNumber to lexemes") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val num1 = "254"
+		val num2 = "2"
+		val program = num1 + "/" + num2
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+				(num1, lexemeType.IntNumber),
+				("/", lexemeType.ArithmeticOp),
+				(num2, lexemeType.IntNumber)
+			)
 
 		assert(sameLexemTables(expected, lexemesTable))
 	}
