@@ -1,0 +1,4 @@
+def main(): None {
+	// this is a comment
+	println("PROGRAM WORKS")
+}

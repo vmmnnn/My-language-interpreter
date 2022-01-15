@@ -1,0 +1,24 @@
+counter: Int
+offset = 10
+
+def sum(): Int {
+	return counter + offset
+}
+
+def main(): None {
+	counter = read()
+	for i from 0 to 50 step 5 {
+		counter = counter + i
+	}
+	if (sum() % 2 == 0) {
+		print("even")
+	} else {
+		print("odd")
+	}
+	printC(offset)
+}
+
+def printC(n: Int): None {
+	print(n)
+	print("Counter = ", counter)
+}
