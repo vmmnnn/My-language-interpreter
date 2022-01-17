@@ -19,9 +19,9 @@ class LexicalAnalyzerSuite extends FunSuite {
 		true
 	}
 
-	def sameLexemTables(table1: ArrayBuffer[(String, lexemeType.Value)],
-														table2: ArrayBuffer[(String, lexemeType.Value)],
-														eps: Double = 1e-10): Boolean = {
+	def sameLexemeTables(table1: ArrayBuffer[(String, lexemeType.Value)],
+											 table2: ArrayBuffer[(String, lexemeType.Value)],
+											 eps: Double = 1e-10): Boolean = {
 		if (table1.length != table2.length) return false
 		table1.zip(table2).foreach(pair => {
 			if (pair._1._2 != pair._2._2) return false
@@ -59,7 +59,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 			ArrayBuffer(("/", lexemeType.ArithmeticOp))
 
 		assert(lexicalAnalyzer.getState() == States.CommentLine)
-		assert(sameLexemTables(expected, lexicalAnalyzer.lexemesTable))
+		assert(sameLexemeTables(expected, lexicalAnalyzer.lexemesTable))
 	}
 
 	test("comment: // /comment") {
@@ -100,7 +100,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val expected: ArrayBuffer[(String, lexemeType.Value)] =
 			ArrayBuffer((program, lexemeType.IntNumber))
 
-		assert(sameLexemTables(expected, lexemesTable))
+		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
 	test("intNumber with comments to lexemes") {
@@ -114,7 +114,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val expected: ArrayBuffer[(String, lexemeType.Value)] =
 			ArrayBuffer((numStr, lexemeType.IntNumber))
 
-		assert(sameLexemTables(expected, lexemesTable))
+		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
 	test("intNumber / intNumber: 254/2 to lexemes") {
@@ -132,7 +132,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 				(num2, lexemeType.IntNumber)
 			)
 
-		assert(sameLexemTables(expected, lexemesTable))
+		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
 	test("doubleNumber 25.7 to lexeme") {
@@ -145,7 +145,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val expected: ArrayBuffer[(String, lexemeType.Value)] =
 			ArrayBuffer((program, lexemeType.DoubleNumber))
 
-		assert(sameLexemTables(expected, lexemesTable))
+		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
 	test("doubleNumber 0.047 to lexeme") {
@@ -158,7 +158,23 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val expected: ArrayBuffer[(String, lexemeType.Value)] =
 			ArrayBuffer((program, lexemeType.DoubleNumber))
 
-		assert(sameLexemTables(expected, lexemesTable))
+		assert(sameLexemeTables(expected, lexemesTable))
 	}
-	
+
+	test("2.09 *307") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val num1 = "2.09"
+		val num2 = "307"
+		val program = num1 + " *" + num2
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] =
+			ArrayBuffer((num1, lexemeType.DoubleNumber),
+									("*", lexemeType.ArithmeticOp),
+									(num2, lexemeType.IntNumber))
+		lexicalAnalyzer.printLexemeTable()
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
 }

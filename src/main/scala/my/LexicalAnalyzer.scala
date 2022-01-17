@@ -49,6 +49,10 @@ class LexicalAnalyzer {
 	def getLineNumber(): Int = lineNumber
 	def getSymbolNumber(): Int = symbolNumber
 
+	def printLexemeTable(): Unit = {
+		lexemesTable.foreach(pair => println(pair._1 + ": " + pair._2.toString))
+	}
+
 	/**
 	 * Runs lexical analysis of the program given
 	 * @param program string with the program to be compiled
@@ -93,10 +97,17 @@ class LexicalAnalyzer {
 			case '\n' => processNewLineSymbol()
 			case '/' => processFirstCommentLineSlashSymbol()
 			case s if (s.isDigit) => processFirstNumberSymbol(symbol)
+			case s if (lexemeType.keyWords(lexemeType.ArithmeticOp).contains(s.toString)) =>
+				processArithmeticOpSymbol(symbol)
 			case _ =>
 		}
 	}
 
+	/**
+	 * Double number processing:
+	 * concatenates new symbols to the end of decimal part
+	 * @param symbol next symbol of the program
+	 */
 	private def processDoubleNumberState(symbol: Char): Unit = {
 		def processNumber(symbol: Char): Unit = {
 			val newNum = symbol.toString.toInt
@@ -110,6 +121,10 @@ class LexicalAnalyzer {
 		}
 	}
 
+	/**
+	 * Adds a lexeme with current double number to a lexemes table
+	 * @param symbol next symbol of the program
+	 */
 	private def finishDoubleNumber(symbol: Char): Unit = {
 		val finalNumber = intNumberBuffer + doubleNumberBuffer
 		lexemesTable.append((finalNumber.toString, lexemeType.DoubleNumber))
@@ -148,7 +163,7 @@ class LexicalAnalyzer {
 	}
 
 	/**
-	 * Add a lexeme with current number to a lexemes table
+	 * Adds a lexeme with current number to a lexemes table
 	 * @param symbol symbol that came after number
 	 */
 	private def finishIntNumber(symbol: Char): Unit = {
