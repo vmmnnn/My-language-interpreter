@@ -6,12 +6,32 @@ import scala.collection.mutable.ArrayBuffer
 
 
 class LexicalAnalyzerSuite extends FunSuite {
+	def isDoubleNumberString(str: String): Boolean = {
+		if (str.count(s => s == '.') != 1) return false
+		if (str.count(s => s.isDigit) != str.length -1) return false
+		true
+	}
+
+	def sameDoubleNumberStrings(str1: String, str2: String, eps: Double = 1e-10): Boolean = {
+		if (!isDoubleNumberString(str1)) return false
+		if (!isDoubleNumberString(str2)) return false
+		if (str1.toDouble - str2.toDouble > eps) return false
+		true
+	}
+
 	def sameLexemTables(table1: ArrayBuffer[(String, lexemeType.Value)],
-														table2: ArrayBuffer[(String, lexemeType.Value)]): Boolean = {
+														table2: ArrayBuffer[(String, lexemeType.Value)],
+														eps: Double = 1e-10): Boolean = {
 		if (table1.length != table2.length) return false
 		table1.zip(table2).foreach(pair => {
-			if (pair._1._1 != pair._2._1) return false
 			if (pair._1._2 != pair._2._2) return false
+			if (pair._1._2 == lexemeType.DoubleNumber) {
+				if (sameDoubleNumberStrings(pair._1._1, pair._2._1, eps) == false) {
+					return false
+				}
+			} else {
+				if (pair._1._1 != pair._2._1) return false
+			}
 		})
 		true
 	}
@@ -55,8 +75,9 @@ class LexicalAnalyzerSuite extends FunSuite {
 			"// comment\n" +
 			"println(100 + 400)\n" +
 			"}"
+		val expected = 4
 		lexicalAnalyzer.run(program)
-		assert(lexicalAnalyzer.getLineNumber() == 4)
+		assert(lexicalAnalyzer.getLineNumber() == expected)
 	}
 
 	test("symbolNumber calculation check") {
@@ -69,7 +90,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		assert(lexicalAnalyzer.getSymbolNumber() == programLine3.length)
 	}
 
-	test("intNumber to lexeme") {
+	test("intNumber 254 to lexeme") {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val program = "254"
 
@@ -96,7 +117,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		assert(sameLexemTables(expected, lexemesTable))
 	}
 
-	test("intNumber / intNumber to lexemes") {
+	test("intNumber / intNumber: 254/2 to lexemes") {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val num1 = "254"
 		val num2 = "2"
@@ -114,4 +135,30 @@ class LexicalAnalyzerSuite extends FunSuite {
 		assert(sameLexemTables(expected, lexemesTable))
 	}
 
+	test("doubleNumber 25.7 to lexeme") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "25.7"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] =
+			ArrayBuffer((program, lexemeType.DoubleNumber))
+
+		assert(sameLexemTables(expected, lexemesTable))
+	}
+
+	test("doubleNumber 0.047 to lexeme") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "0.047"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] =
+			ArrayBuffer((program, lexemeType.DoubleNumber))
+
+		assert(sameLexemTables(expected, lexemesTable))
+	}
+	
 }

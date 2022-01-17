@@ -36,7 +36,7 @@ class LexicalAnalyzer {
 	private var nCommentLineSlashes = 0
 	private var intNumberBuffer = 0
 	private var doubleNumberBuffer = 0.0
-	private var doubleNumberPow10 = 1
+	private var doubleNumberPow10 = 0.1
 
 	private var state = States.H
 	private var previousState = States.H // should be saved in case of comment
@@ -71,6 +71,7 @@ class LexicalAnalyzer {
 			case States.CommentLine => processCommentLineState(symbol)
 			case States.SkipLine => processSkipLineState(symbol)
 			case States.IntNumber => processIntNumberState(symbol)
+			case States.DoubleNumber => processDoubleNumberState(symbol)
 		}
 	}
 
@@ -96,6 +97,30 @@ class LexicalAnalyzer {
 		}
 	}
 
+	private def processDoubleNumberState(symbol: Char): Unit = {
+		def processNumber(symbol: Char): Unit = {
+			val newNum = symbol.toString.toInt
+			doubleNumberBuffer += newNum * doubleNumberPow10
+			doubleNumberPow10 *= 0.1
+		}
+
+		symbol match {
+			case s if (s.isDigit) => processNumber(symbol)
+			case s => finishDoubleNumber(s)
+		}
+	}
+
+	private def finishDoubleNumber(symbol: Char): Unit = {
+		val finalNumber = intNumberBuffer + doubleNumberBuffer
+		lexemesTable.append((finalNumber.toString, lexemeType.DoubleNumber))
+		intNumberBuffer = 0
+		doubleNumberBuffer = 0
+		doubleNumberPow10 = 0.1
+		previousState = state
+		state = States.H
+		processSymbol(symbol)
+	}
+
 	/**
 	 * Digit arrived => number has started.
 	 * intNumberBuffer will accumulate the number
@@ -114,6 +139,7 @@ class LexicalAnalyzer {
 		def convertStateToDoubleNumber(): Unit = {
 			state = States.DoubleNumber
 		}
+
 		symbol match {
 			case s if (s.isDigit) => intNumberBuffer = intNumberBuffer * 10 + symbol.toString.toInt
 			case '.' => convertStateToDoubleNumber()
@@ -125,7 +151,7 @@ class LexicalAnalyzer {
 	 * Add a lexeme with current number to a lexemes table
 	 * @param symbol symbol that came after number
 	 */
-	def finishIntNumber(symbol: Char): Unit = {
+	private def finishIntNumber(symbol: Char): Unit = {
 		lexemesTable.append((intNumberBuffer.toString, lexemeType.IntNumber))
 		intNumberBuffer = 0
 		previousState = state
