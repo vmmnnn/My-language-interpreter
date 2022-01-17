@@ -174,7 +174,199 @@ class LexicalAnalyzerSuite extends FunSuite {
 			ArrayBuffer((num1, lexemeType.DoubleNumber),
 									("*", lexemeType.ArithmeticOp),
 									(num2, lexemeType.IntNumber))
-		lexicalAnalyzer.printLexemeTable()
+
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
+
+	test("0+(307/ 2-0.1 )%7") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val num1 = "0"
+		val num2 = "307"
+		val num3 = "2"
+		val num4 = "0.1"
+		val num5 = "7"
+
+		val program = "0+(307/ 2-0.1 )%7"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			(num1, lexemeType.IntNumber),
+			("+", lexemeType.ArithmeticOp),
+			("(", lexemeType.Brackets),
+			(num2, lexemeType.IntNumber),
+			("/", lexemeType.ArithmeticOp),
+			(num3, lexemeType.IntNumber),
+			("-", lexemeType.ArithmeticOp),
+			(num4, lexemeType.DoubleNumber),
+			(")", lexemeType.Brackets),
+			("%", lexemeType.ArithmeticOp),
+			(num5, lexemeType.IntNumber))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("idx1+3*idx2") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val identifier1 = "idx1"
+		val identifier2 = "idx2"
+		val num = "3"
+		val program = f"${identifier1}+${num}*${identifier2}"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			(identifier1, lexemeType.Name),
+			("+", lexemeType.ArithmeticOp),
+			(num, lexemeType.IntNumber),
+			("*", lexemeType.ArithmeticOp),
+			(identifier2, lexemeType.Name))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("def main(): None") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "def main(): None"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			("def", lexemeType.KeyWord),
+			("main", lexemeType.Name),
+			("(", lexemeType.Brackets),
+			(")", lexemeType.Brackets),
+			(":", lexemeType.Colon),
+			("None", lexemeType.Type))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("idx=0") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val identifier = "idx"
+		val num = "0"
+		val program = f"${identifier}=${num}"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			(identifier, lexemeType.Name),
+			("=", lexemeType.DefineOp),
+			(num, lexemeType.IntNumber))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("if (a != b) {idx=0}") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "if (a != b) {idx=0}"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			("if", lexemeType.KeyWord),
+			("(", lexemeType.Brackets),
+			("a", lexemeType.Name),
+			("!=", lexemeType.BoolOp),
+			("b", lexemeType.Name),
+			(")", lexemeType.Brackets),
+			("{", lexemeType.Brackets),
+			("idx", lexemeType.Name),
+			("=", lexemeType.DefineOp),
+			("0", lexemeType.IntNumber),
+			("}", lexemeType.Brackets))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("if (a == b) {idx=0}") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "if (a == b) {idx=0}"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			("if", lexemeType.KeyWord),
+			("(", lexemeType.Brackets),
+			("a", lexemeType.Name),
+			("==", lexemeType.BoolOp),
+			("b", lexemeType.Name),
+			(")", lexemeType.Brackets),
+			("{", lexemeType.Brackets),
+			("idx", lexemeType.Name),
+			("=", lexemeType.DefineOp),
+			("0", lexemeType.IntNumber),
+			("}", lexemeType.Brackets))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("if (a <= b) {c = a >b}") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "if (a <= b) {c = a >b}"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			("if", lexemeType.KeyWord),
+			("(", lexemeType.Brackets),
+			("a", lexemeType.Name),
+			("<=", lexemeType.BoolOp),
+			("b", lexemeType.Name),
+			(")", lexemeType.Brackets),
+			("{", lexemeType.Brackets),
+			("c", lexemeType.Name),
+			("=", lexemeType.DefineOp),
+			("a", lexemeType.Name),
+			(">", lexemeType.BoolOp),
+			("b", lexemeType.Name),
+			("}", lexemeType.Brackets))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("print('abc')") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "print(" + '"'.toString + "abc" + '"'.toString + ")"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			("print", lexemeType.LangFunction),
+			("(", lexemeType.Brackets),
+			("abc", lexemeType.String),
+			(")", lexemeType.Brackets))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
+	test("print(22, '!=', 0.0)") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "print(22," + '"'.toString + "!=" + '"'.toString + " ,0.0)"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
+			("print", lexemeType.LangFunction),
+			("(", lexemeType.Brackets),
+			("22", lexemeType.IntNumber),
+			(",", lexemeType.Comma),
+			("!=", lexemeType.String),
+			(",", lexemeType.Comma),
+			("0.0", lexemeType.DoubleNumber),
+			(")", lexemeType.Brackets))
+
+		assert(sameLexemeTables(expected, lexemesTable))
+	}
+
 }
