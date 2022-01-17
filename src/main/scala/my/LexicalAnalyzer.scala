@@ -8,6 +8,7 @@ object States extends Enumeration {
 	val H, CommentLine, SkipLine, IntNumber, DoubleNumber, Name, String, DefineSymbols, ExclamationSymbol, BoolOp = Value
 }
 
+// Stores key words
 object lexemeType extends Enumeration {
 	type lexemeType = Value
 	val ArithmeticOp, BoolOp, BoolVal, Brackets, Colon, Comma, DefineOp, DoubleNumber, IntNumber, KeyWord, LangFunction, Name, String, Type = Value
@@ -25,6 +26,10 @@ object lexemeType extends Enumeration {
 	)
 }
 
+/*
+	Finite-state machine
+	Use run-function and get result in lexemesTable variable
+ */
 class LexicalAnalyzer {
 	private var lineNumber = 1
 	private var symbolNumber = 0
