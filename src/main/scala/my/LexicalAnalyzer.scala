@@ -9,8 +9,8 @@ object States extends Enumeration {
 }
 
 // Stores key words
-object lexemeType extends Enumeration {
-	type lexemeType = Value
+object LexemeType extends Enumeration {
+	type LexemeType = Value
 	val ArithmeticOp, BoolOp, BoolVal, Brackets, Colon, Comma, DefineOp, DoubleNumber, IntNumber, KeyWord, LangFunction, Name, String, Type = Value
 	val constantLexemes = Map(
 		ArithmeticOp -> Array("+", "-", "*", "/", "%"),
@@ -48,14 +48,14 @@ class LexicalAnalyzer {
 
 	private val errorHeader = "Lexical error:\n"
 
-	val lexemesTable: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer()
+	val lexemesTable: ArrayBuffer[Lexeme] = ArrayBuffer()
 
 	def getState(): States.Value = state
 	def getLineNumber(): Int = lineNumber
 	def getSymbolNumber(): Int = symbolNumber
 
 	def printLexemeTable(): Unit = {
-		lexemesTable.foreach(pair => println(pair._1 + ": " + pair._2.toString))
+		lexemesTable.foreach(lexeme => println(lexeme))
 	}
 
 	/**
@@ -113,9 +113,9 @@ class LexicalAnalyzer {
 			case '<' | '>' => processBoolOpSymbol(symbol)
 			case '"' => processFirstStringSymbol()
 			case s if (s.isDigit) => processFirstNumberSymbol(symbol)
-			case s if (lexemeType.constantLexemes(lexemeType.ArithmeticOp).contains(s.toString)) =>
+			case s if (LexemeType.constantLexemes(LexemeType.ArithmeticOp).contains(s.toString)) =>
 				processArithmeticOpSymbol(symbol)
-			case s if (lexemeType.constantLexemes(lexemeType.Brackets).contains(s.toString)) =>
+			case s if (LexemeType.constantLexemes(LexemeType.Brackets).contains(s.toString)) =>
 				processBracketSymbol(symbol)
 			case s if (s.isLetter | s == "_") => processFirstNameSymbol(symbol)
 			case _ =>
@@ -136,7 +136,7 @@ class LexicalAnalyzer {
 	private def processStringState(symbol: Char): Unit = {
 		def finish(): Unit = {
 			state = States.H
-			lexemesTable.append((strBuffer, lexemeType.String))
+			lexemesTable.append(new Lexeme(strBuffer, LexemeType.String))
 			strBuffer = ""
 		}
 
@@ -161,13 +161,13 @@ class LexicalAnalyzer {
 	 */
 	private def processBoolOpState(symbol: Char): Unit = {
 		def finishNoEqSign(symbol: Char): Unit = {
-			lexemesTable.append((boolOpBuffer, lexemeType.BoolOp))
+			lexemesTable.append(new Lexeme(boolOpBuffer, LexemeType.BoolOp))
 			boolOpBuffer = ""
 			processSymbol(symbol)
 		}
 
 		def finishWithEqSign(): Unit = {
-			lexemesTable.append((boolOpBuffer + "=", lexemeType.BoolOp))
+			lexemesTable.append(new Lexeme(boolOpBuffer + "=", LexemeType.BoolOp))
 			boolOpBuffer = ""
 		}
 
@@ -204,7 +204,7 @@ class LexicalAnalyzer {
 
 		state = States.H
 		symbol match {
-			case '=' => lexemesTable.append(("!=", lexemeType.BoolOp))
+			case '=' => lexemesTable.append(new Lexeme("!=", LexemeType.BoolOp))
 			case _ => processError()
 		}
 	}
@@ -242,8 +242,8 @@ class LexicalAnalyzer {
 		}
 
 		nDefineSymbols match {
-			case 1 => lexemesTable.append(("=", lexemeType.DefineOp))
-			case 2 => lexemesTable.append(("==", lexemeType.BoolOp))
+			case 1 => lexemesTable.append(new Lexeme("=", LexemeType.DefineOp))
+			case 2 => lexemesTable.append(new Lexeme("==", LexemeType.BoolOp))
 			case _ => System.err.println(getCommentErrorMessage())
 		}
 
@@ -256,14 +256,14 @@ class LexicalAnalyzer {
 	 * Appends ':' to lexemeTable
 	 */
 	private def processColonSymbol(): Unit = {
-		lexemesTable.append((":", lexemeType.Colon))
+		lexemesTable.append(new Lexeme(":", LexemeType.Colon))
 	}
 
 	/**
 	 * Appends ',' to lexemeTable
 	 */
 	private def processCommaSymbol(): Unit = {
-		lexemesTable.append((",", lexemeType.Comma))
+		lexemesTable.append(new Lexeme(",", LexemeType.Comma))
 	}
 
 	/**
@@ -297,13 +297,13 @@ class LexicalAnalyzer {
 			errorMessage + errorPositionString + "\n\n"
 		}
 
-		val typeOptions = lexemeType.constantLexemes.filter(pair => {
-			lexemeType.constantLexemes(pair._1).contains(nameBuffer)
+		val typeOptions = LexemeType.constantLexemes.filter(pair => {
+			LexemeType.constantLexemes(pair._1).contains(nameBuffer)
 		}).toArray
 		val len = typeOptions.length
 		len match {
-			case 0 => lexemesTable.append((nameBuffer, lexemeType.Name))
-			case 1 => lexemesTable.append((nameBuffer, typeOptions(0)._1))
+			case 0 => lexemesTable.append(new Lexeme(nameBuffer, LexemeType.Name))
+			case 1 => lexemesTable.append(new Lexeme(nameBuffer, typeOptions(0)._1))
 			case _ => System.err.println(getCommentErrorMessage())
 		}
 		state = States.H
@@ -335,7 +335,7 @@ class LexicalAnalyzer {
 	 */
 	private def finishDoubleNumber(symbol: Char): Unit = {
 		val finalNumber = intNumberBuffer + doubleNumberBuffer
-		lexemesTable.append((finalNumber.toString, lexemeType.DoubleNumber))
+		lexemesTable.append(new Lexeme(finalNumber))
 		intNumberBuffer = 0
 		doubleNumberBuffer = 0
 		doubleNumberPow10 = 0.1
@@ -375,7 +375,7 @@ class LexicalAnalyzer {
 	 * @param symbol symbol that came after number
 	 */
 	private def finishIntNumber(symbol: Char): Unit = {
-		lexemesTable.append((intNumberBuffer.toString, lexemeType.IntNumber))
+		lexemesTable.append(new Lexeme(intNumberBuffer))
 		intNumberBuffer = 0
 		previousState = state
 		state = States.H
@@ -464,7 +464,7 @@ class LexicalAnalyzer {
 	 * @param symbol +, -, *, /, %
 	 */
 	private def processArithmeticOpSymbol(symbol: Char) = {
-		lexemesTable.append((symbol.toString, lexemeType.ArithmeticOp))
+		lexemesTable.append(new Lexeme(symbol.toString, LexemeType.ArithmeticOp))
 		previousState = state
 		state = States.H
 	}
@@ -474,9 +474,19 @@ class LexicalAnalyzer {
 	 * @param symbol [,],(,)
 	 */
 	private def processBracketSymbol(symbol: Char) = {
-		lexemesTable.append((symbol.toString, lexemeType.Brackets))
+		lexemesTable.append(new Lexeme(symbol.toString, LexemeType.Brackets))
 		previousState = state
 		state = States.H
 	}
 
+}
+
+class Lexeme(val value: String, val lexemeType: LexemeType.Value) {
+	def this(intNumber: Int) {
+		this(intNumber.toString, LexemeType.IntNumber)
+	}
+	def this(doubleNumber: Double) {
+		this(doubleNumber.toString, LexemeType.DoubleNumber)
+	}
+	override def toString: String = f"${value}: ${lexemeType.toString}"
 }

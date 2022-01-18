@@ -1,7 +1,6 @@
 package my
 
 import org.scalatest.FunSuite
-
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -19,20 +18,23 @@ class LexicalAnalyzerSuite extends FunSuite {
 		true
 	}
 
-	def sameLexemeTables(table1: ArrayBuffer[(String, lexemeType.Value)],
-											 table2: ArrayBuffer[(String, lexemeType.Value)],
+	def sameLexemes(lexeme1: Lexeme, lexeme2: Lexeme, eps: Double = 1e-10): Boolean = {
+		if (lexeme1.lexemeType != lexeme2.lexemeType) return false
+		if (lexeme1.lexemeType == LexemeType.DoubleNumber) {
+			if (sameDoubleNumberStrings(lexeme1.value, lexeme2.value, eps) == false) {
+				return false
+			}
+		} else {
+			if (lexeme1.value != lexeme2.value) return false
+		}
+		true
+	}
+
+	def sameLexemeTables(table1: ArrayBuffer[Lexeme],
+											 table2: ArrayBuffer[Lexeme],
 											 eps: Double = 1e-10): Boolean = {
 		if (table1.length != table2.length) return false
-		table1.zip(table2).foreach(pair => {
-			if (pair._1._2 != pair._2._2) return false
-			if (pair._1._2 == lexemeType.DoubleNumber) {
-				if (sameDoubleNumberStrings(pair._1._1, pair._2._1, eps) == false) {
-					return false
-				}
-			} else {
-				if (pair._1._1 != pair._2._1) return false
-			}
-		})
+		table1.zip(table2).foreach(pair => if (!sameLexemes(pair._1, pair._2, eps)) return false)
 		true
 	}
 
@@ -55,8 +57,8 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val program = "/ //comment"
 		lexicalAnalyzer.run(program)
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] =
-			ArrayBuffer(("/", lexemeType.ArithmeticOp))
+		val expected: ArrayBuffer[Lexeme] =
+			ArrayBuffer(new Lexeme("/", LexemeType.ArithmeticOp))
 
 		assert(lexicalAnalyzer.getState() == States.CommentLine)
 		assert(sameLexemeTables(expected, lexicalAnalyzer.lexemesTable))
@@ -97,8 +99,8 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] =
-			ArrayBuffer((program, lexemeType.IntNumber))
+		val expected: ArrayBuffer[Lexeme] =
+			ArrayBuffer(new Lexeme(program, LexemeType.IntNumber))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -111,8 +113,8 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] =
-			ArrayBuffer((numStr, lexemeType.IntNumber))
+		val expected: ArrayBuffer[Lexeme] =
+			ArrayBuffer(new Lexeme(numStr, LexemeType.IntNumber))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -126,10 +128,10 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-				(num1, lexemeType.IntNumber),
-				("/", lexemeType.ArithmeticOp),
-				(num2, lexemeType.IntNumber)
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+				new Lexeme(num1, LexemeType.IntNumber),
+				new Lexeme("/", LexemeType.ArithmeticOp),
+				new Lexeme(num2, LexemeType.IntNumber)
 			)
 
 		assert(sameLexemeTables(expected, lexemesTable))
@@ -142,8 +144,8 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] =
-			ArrayBuffer((program, lexemeType.DoubleNumber))
+		val expected: ArrayBuffer[Lexeme] =
+			ArrayBuffer(new Lexeme(program, LexemeType.DoubleNumber))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -155,8 +157,8 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] =
-			ArrayBuffer((program, lexemeType.DoubleNumber))
+		val expected: ArrayBuffer[Lexeme] =
+			ArrayBuffer(new Lexeme(program, LexemeType.DoubleNumber))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -170,10 +172,10 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] =
-			ArrayBuffer((num1, lexemeType.DoubleNumber),
-									("*", lexemeType.ArithmeticOp),
-									(num2, lexemeType.IntNumber))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme(num1, LexemeType.DoubleNumber),
+			new Lexeme("*", LexemeType.ArithmeticOp),
+			new Lexeme(num2, LexemeType.IntNumber))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -191,18 +193,18 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			(num1, lexemeType.IntNumber),
-			("+", lexemeType.ArithmeticOp),
-			("(", lexemeType.Brackets),
-			(num2, lexemeType.IntNumber),
-			("/", lexemeType.ArithmeticOp),
-			(num3, lexemeType.IntNumber),
-			("-", lexemeType.ArithmeticOp),
-			(num4, lexemeType.DoubleNumber),
-			(")", lexemeType.Brackets),
-			("%", lexemeType.ArithmeticOp),
-			(num5, lexemeType.IntNumber))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme(num1, LexemeType.IntNumber),
+			new Lexeme("+", LexemeType.ArithmeticOp),
+			new Lexeme("(", LexemeType.Brackets),
+			new Lexeme(num2, LexemeType.IntNumber),
+			new Lexeme("/", LexemeType.ArithmeticOp),
+			new Lexeme(num3, LexemeType.IntNumber),
+			new Lexeme("-", LexemeType.ArithmeticOp),
+			new Lexeme(num4, LexemeType.DoubleNumber),
+			new Lexeme(")", LexemeType.Brackets),
+			new Lexeme("%", LexemeType.ArithmeticOp),
+			new Lexeme(num5, LexemeType.IntNumber))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -217,12 +219,12 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			(identifier1, lexemeType.Name),
-			("+", lexemeType.ArithmeticOp),
-			(num, lexemeType.IntNumber),
-			("*", lexemeType.ArithmeticOp),
-			(identifier2, lexemeType.Name))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme(identifier1, LexemeType.Name),
+			new Lexeme("+", LexemeType.ArithmeticOp),
+			new Lexeme(num, LexemeType.IntNumber),
+			new Lexeme("*", LexemeType.ArithmeticOp),
+			new Lexeme(identifier2, LexemeType.Name))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -234,13 +236,13 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			("def", lexemeType.KeyWord),
-			("main", lexemeType.Name),
-			("(", lexemeType.Brackets),
-			(")", lexemeType.Brackets),
-			(":", lexemeType.Colon),
-			("None", lexemeType.Type))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme("def", LexemeType.KeyWord),
+			new Lexeme("main", LexemeType.Name),
+			new Lexeme("(", LexemeType.Brackets),
+			new Lexeme(")", LexemeType.Brackets),
+			new Lexeme(":", LexemeType.Colon),
+			new Lexeme("None", LexemeType.Type))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -254,10 +256,10 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			(identifier, lexemeType.Name),
-			("=", lexemeType.DefineOp),
-			(num, lexemeType.IntNumber))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme(identifier, LexemeType.Name),
+			new Lexeme("=", LexemeType.DefineOp),
+			new Lexeme(num, LexemeType.IntNumber))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -269,18 +271,18 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			("if", lexemeType.KeyWord),
-			("(", lexemeType.Brackets),
-			("a", lexemeType.Name),
-			("!=", lexemeType.BoolOp),
-			("b", lexemeType.Name),
-			(")", lexemeType.Brackets),
-			("{", lexemeType.Brackets),
-			("idx", lexemeType.Name),
-			("=", lexemeType.DefineOp),
-			("0", lexemeType.IntNumber),
-			("}", lexemeType.Brackets))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme("if", LexemeType.KeyWord),
+			new Lexeme("(", LexemeType.Brackets),
+			new Lexeme("a", LexemeType.Name),
+			new Lexeme("!=", LexemeType.BoolOp),
+			new Lexeme("b", LexemeType.Name),
+			new Lexeme(")", LexemeType.Brackets),
+			new Lexeme("{", LexemeType.Brackets),
+			new Lexeme("idx", LexemeType.Name),
+			new Lexeme("=", LexemeType.DefineOp),
+			new Lexeme("0", LexemeType.IntNumber),
+			new Lexeme("}", LexemeType.Brackets))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -292,18 +294,18 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			("if", lexemeType.KeyWord),
-			("(", lexemeType.Brackets),
-			("a", lexemeType.Name),
-			("==", lexemeType.BoolOp),
-			("b", lexemeType.Name),
-			(")", lexemeType.Brackets),
-			("{", lexemeType.Brackets),
-			("idx", lexemeType.Name),
-			("=", lexemeType.DefineOp),
-			("0", lexemeType.IntNumber),
-			("}", lexemeType.Brackets))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme("if", LexemeType.KeyWord),
+			new Lexeme("(", LexemeType.Brackets),
+			new Lexeme("a", LexemeType.Name),
+			new Lexeme("==", LexemeType.BoolOp),
+			new Lexeme("b", LexemeType.Name),
+			new Lexeme(")", LexemeType.Brackets),
+			new Lexeme("{", LexemeType.Brackets),
+			new Lexeme("idx", LexemeType.Name),
+			new Lexeme("=", LexemeType.DefineOp),
+			new Lexeme("0", LexemeType.IntNumber),
+			new Lexeme("}", LexemeType.Brackets))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -315,20 +317,20 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			("if", lexemeType.KeyWord),
-			("(", lexemeType.Brackets),
-			("a", lexemeType.Name),
-			("<=", lexemeType.BoolOp),
-			("b", lexemeType.Name),
-			(")", lexemeType.Brackets),
-			("{", lexemeType.Brackets),
-			("c", lexemeType.Name),
-			("=", lexemeType.DefineOp),
-			("a", lexemeType.Name),
-			(">", lexemeType.BoolOp),
-			("b", lexemeType.Name),
-			("}", lexemeType.Brackets))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme("if", LexemeType.KeyWord),
+			new Lexeme("(", LexemeType.Brackets),
+			new Lexeme("a", LexemeType.Name),
+			new Lexeme("<=", LexemeType.BoolOp),
+			new Lexeme("b", LexemeType.Name),
+			new Lexeme(")", LexemeType.Brackets),
+			new Lexeme("{", LexemeType.Brackets),
+			new Lexeme("c", LexemeType.Name),
+			new Lexeme("=", LexemeType.DefineOp),
+			new Lexeme("a", LexemeType.Name),
+			new Lexeme(">", LexemeType.BoolOp),
+			new Lexeme("b", LexemeType.Name),
+			new Lexeme("}", LexemeType.Brackets))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -340,11 +342,11 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			("print", lexemeType.LangFunction),
-			("(", lexemeType.Brackets),
-			("abc", lexemeType.String),
-			(")", lexemeType.Brackets))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme("print", LexemeType.LangFunction),
+			new Lexeme("(", LexemeType.Brackets),
+			new Lexeme("abc", LexemeType.String),
+			new Lexeme(")", LexemeType.Brackets))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -356,15 +358,15 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
-		val expected: ArrayBuffer[(String, lexemeType.Value)] = ArrayBuffer(
-			("print", lexemeType.LangFunction),
-			("(", lexemeType.Brackets),
-			("22", lexemeType.IntNumber),
-			(",", lexemeType.Comma),
-			("!=", lexemeType.String),
-			(",", lexemeType.Comma),
-			("0.0", lexemeType.DoubleNumber),
-			(")", lexemeType.Brackets))
+		val expected: ArrayBuffer[Lexeme] = ArrayBuffer(
+			new Lexeme("print", LexemeType.LangFunction),
+			new Lexeme("(", LexemeType.Brackets),
+			new Lexeme("22", LexemeType.IntNumber),
+			new Lexeme(",", LexemeType.Comma),
+			new Lexeme("!=", LexemeType.String),
+			new Lexeme(",", LexemeType.Comma),
+			new Lexeme("0.0", LexemeType.DoubleNumber),
+			new Lexeme(")", LexemeType.Brackets))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
