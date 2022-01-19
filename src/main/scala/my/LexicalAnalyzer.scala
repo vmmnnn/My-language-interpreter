@@ -132,7 +132,7 @@ class LexicalAnalyzer {
 	private def processStringState(symbol: Char): Unit = {
 		def finish(): Unit = {
 			state = States.H
-			lexemesTable.add(new Lexeme(strBuffer, LexemeType.String))
+			lexemesTable.add(new Lexeme(strBuffer, LexemeType.String, lineNumber))
 			strBuffer = ""
 		}
 
@@ -157,13 +157,13 @@ class LexicalAnalyzer {
 	 */
 	private def processBoolOpState(symbol: Char): Unit = {
 		def finishNoEqSign(symbol: Char): Unit = {
-			lexemesTable.add(new Lexeme(boolOpBuffer, LexemeType.BoolOp))
+			lexemesTable.add(new Lexeme(boolOpBuffer, LexemeType.BoolOp, lineNumber))
 			boolOpBuffer = ""
 			processSymbol(symbol)
 		}
 
 		def finishWithEqSign(): Unit = {
-			lexemesTable.add(new Lexeme(boolOpBuffer + "=", LexemeType.BoolOp))
+			lexemesTable.add(new Lexeme(boolOpBuffer + "=", LexemeType.BoolOp, lineNumber))
 			boolOpBuffer = ""
 		}
 
@@ -200,7 +200,7 @@ class LexicalAnalyzer {
 
 		state = States.H
 		symbol match {
-			case '=' => lexemesTable.add(new Lexeme("!=", LexemeType.BoolOp))
+			case '=' => lexemesTable.add(new Lexeme("!=", LexemeType.BoolOp, lineNumber))
 			case _ => processError()
 		}
 	}
@@ -238,8 +238,8 @@ class LexicalAnalyzer {
 		}
 
 		nDefineSymbols match {
-			case 1 => lexemesTable.add(new Lexeme("=", LexemeType.DefineOp))
-			case 2 => lexemesTable.add(new Lexeme("==", LexemeType.BoolOp))
+			case 1 => lexemesTable.add(new Lexeme("=", LexemeType.DefineOp, lineNumber))
+			case 2 => lexemesTable.add(new Lexeme("==", LexemeType.BoolOp, lineNumber))
 			case _ => System.err.println(getCommentErrorMessage())
 		}
 
@@ -252,14 +252,14 @@ class LexicalAnalyzer {
 	 * adds ':' to lexemeTable
 	 */
 	private def processColonSymbol(): Unit = {
-		lexemesTable.add(new Lexeme(":", LexemeType.Colon))
+		lexemesTable.add(new Lexeme(":", LexemeType.Colon, lineNumber))
 	}
 
 	/**
 	 * adds ',' to lexemeTable
 	 */
 	private def processCommaSymbol(): Unit = {
-		lexemesTable.add(new Lexeme(",", LexemeType.Comma))
+		lexemesTable.add(new Lexeme(",", LexemeType.Comma, lineNumber))
 	}
 
 	/**
@@ -298,8 +298,8 @@ class LexicalAnalyzer {
 		}).toArray
 		val len = typeOptions.length
 		len match {
-			case 0 => lexemesTable.add(new Lexeme(nameBuffer, LexemeType.Name))
-			case 1 => lexemesTable.add(new Lexeme(nameBuffer, typeOptions(0)._1))
+			case 0 => lexemesTable.add(new Lexeme(nameBuffer, LexemeType.Name, lineNumber))
+			case 1 => lexemesTable.add(new Lexeme(nameBuffer, typeOptions(0)._1, lineNumber))
 			case _ => System.err.println(getCommentErrorMessage())
 		}
 		state = States.H
@@ -331,7 +331,7 @@ class LexicalAnalyzer {
 	 */
 	private def finishDoubleNumber(symbol: Char): Unit = {
 		val finalNumber = intNumberBuffer + doubleNumberBuffer
-		lexemesTable.add(new Lexeme(finalNumber))
+		lexemesTable.add(new Lexeme(finalNumber, lineNumber))
 		intNumberBuffer = 0
 		doubleNumberBuffer = 0
 		doubleNumberPow10 = 0.1
@@ -371,7 +371,7 @@ class LexicalAnalyzer {
 	 * @param symbol symbol that came after number
 	 */
 	private def finishIntNumber(symbol: Char): Unit = {
-		lexemesTable.add(new Lexeme(intNumberBuffer))
+		lexemesTable.add(new Lexeme(intNumberBuffer, lineNumber))
 		intNumberBuffer = 0
 		previousState = state
 		state = States.H
@@ -460,7 +460,7 @@ class LexicalAnalyzer {
 	 * @param symbol +, -, *, /, %
 	 */
 	private def processArithmeticOpSymbol(symbol: Char) = {
-		lexemesTable.add(new Lexeme(symbol.toString, LexemeType.ArithmeticOp))
+		lexemesTable.add(new Lexeme(symbol.toString, LexemeType.ArithmeticOp, lineNumber))
 		previousState = state
 		state = States.H
 	}
@@ -470,21 +470,21 @@ class LexicalAnalyzer {
 	 * @param symbol [,],(,)
 	 */
 	private def processBracketSymbol(symbol: Char) = {
-		lexemesTable.add(new Lexeme(symbol.toString, LexemeType.Brackets))
+		lexemesTable.add(new Lexeme(symbol.toString, LexemeType.Brackets, lineNumber))
 		previousState = state
 		state = States.H
 	}
 
 }
 
-class Lexeme(val value: String, val lexemeType: LexemeType.Value) {
-	def this(intNumber: Int) {
-		this(intNumber.toString, LexemeType.IntNumber)
+class Lexeme(val value: String, val lexemeType: LexemeType.Value, val lineNumber: Int) {
+	def this(intNumber: Int, lineNumber: Int) {
+		this(intNumber.toString, LexemeType.IntNumber, lineNumber)
 	}
-	def this(doubleNumber: Double) {
-		this(doubleNumber.toString, LexemeType.DoubleNumber)
+	def this(doubleNumber: Double, lineNumber: Int) {
+		this(doubleNumber.toString, LexemeType.DoubleNumber, lineNumber)
 	}
-	override def toString: String = f"${value}: ${lexemeType.toString}"
+	override def toString: String = f"${value} (${lineNumber}): ${lexemeType.toString}"
 }
 
 class LexemeTable {

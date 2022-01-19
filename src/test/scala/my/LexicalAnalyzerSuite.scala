@@ -19,6 +19,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 
 	def sameLexemes(lexeme1: Lexeme, lexeme2: Lexeme, eps: Double = 1e-10): Boolean = {
 		if (lexeme1.lexemeType != lexeme2.lexemeType) return false
+		if (lexeme1.lineNumber != lexeme2.lineNumber) return false
 		if (lexeme1.lexemeType == LexemeType.DoubleNumber) {
 			if (sameDoubleNumberStrings(lexeme1.value, lexeme2.value, eps) == false) {
 				return false
@@ -61,7 +62,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("/", LexemeType.ArithmeticOp))
+			.add(new Lexeme("/", LexemeType.ArithmeticOp, 1))
 
 		assert(lexicalAnalyzer.getState() == States.CommentLine)
 		assert(sameLexemeTables(expected, lexicalAnalyzer.lexemesTable))
@@ -103,7 +104,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(program, LexemeType.IntNumber))
+			.add(new Lexeme(program, LexemeType.IntNumber, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -117,9 +118,9 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(numStr, LexemeType.IntNumber))
+			.add(new Lexeme(numStr, LexemeType.IntNumber, 2))
 
-		assert(sameLexemeTables(expected, lexemesTable))
+		assert(sameLexemeTables(expected, lexemesTable, 1))
 	}
 
 	test("intNumber / intNumber: 254/2 to lexemes") {
@@ -132,9 +133,9 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(num1, LexemeType.IntNumber))
-			.add(new Lexeme("/", LexemeType.ArithmeticOp))
-			.add(new Lexeme(num2, LexemeType.IntNumber))
+			.add(new Lexeme(num1, LexemeType.IntNumber, 1))
+			.add(new Lexeme("/", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme(num2, LexemeType.IntNumber, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -147,7 +148,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(program, LexemeType.DoubleNumber))
+			.add(new Lexeme(program, LexemeType.DoubleNumber, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -160,7 +161,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(program, LexemeType.DoubleNumber))
+			.add(new Lexeme(program, LexemeType.DoubleNumber, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -175,9 +176,9 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(num1, LexemeType.DoubleNumber))
-			.add(new Lexeme("*", LexemeType.ArithmeticOp))
-			.add(new Lexeme(num2, LexemeType.IntNumber))
+			.add(new Lexeme(num1, LexemeType.DoubleNumber, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme(num2, LexemeType.IntNumber, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -196,17 +197,17 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(num1, LexemeType.IntNumber))
-			.add(new Lexeme("+", LexemeType.ArithmeticOp))
-			.add(new Lexeme("(", LexemeType.Brackets))
-			.add(new Lexeme(num2, LexemeType.IntNumber))
-			.add(new Lexeme("/", LexemeType.ArithmeticOp))
-			.add(new Lexeme(num3, LexemeType.IntNumber))
-			.add(new Lexeme("-", LexemeType.ArithmeticOp))
-			.add(new Lexeme(num4, LexemeType.DoubleNumber))
-			.add(new Lexeme(")", LexemeType.Brackets))
-			.add(new Lexeme("%", LexemeType.ArithmeticOp))
-			.add(new Lexeme(num5, LexemeType.IntNumber))
+			.add(new Lexeme(num1, LexemeType.IntNumber, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme(num2, LexemeType.IntNumber, 1))
+			.add(new Lexeme("/", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme(num3, LexemeType.IntNumber, 1))
+			.add(new Lexeme("-", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme(num4, LexemeType.DoubleNumber, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme("%", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme(num5, LexemeType.IntNumber, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -222,11 +223,11 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(identifier1, LexemeType.Name))
-			.add(new Lexeme("+", LexemeType.ArithmeticOp))
-			.add(new Lexeme(num, LexemeType.IntNumber))
-			.add(new Lexeme("*", LexemeType.ArithmeticOp))
-			.add(new Lexeme(identifier2, LexemeType.Name))
+			.add(new Lexeme(identifier1, LexemeType.Name, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme(num, LexemeType.IntNumber, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme(identifier2, LexemeType.Name, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -239,12 +240,12 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("def", LexemeType.KeyWord))
-			.add(new Lexeme("main", LexemeType.Name))
-			.add(new Lexeme("(", LexemeType.Brackets))
-			.add(new Lexeme(")", LexemeType.Brackets))
-			.add(new Lexeme(":", LexemeType.Colon))
-			.add(new Lexeme("None", LexemeType.Type))
+			.add(new Lexeme("def", LexemeType.KeyWord, 1))
+			.add(new Lexeme("main", LexemeType.Name, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme(":", LexemeType.Colon, 1))
+			.add(new Lexeme("None", LexemeType.Type, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -259,9 +260,9 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme(identifier, LexemeType.Name))
-			.add(new Lexeme("=", LexemeType.DefineOp))
-			.add(new Lexeme(num, LexemeType.IntNumber))
+			.add(new Lexeme(identifier, LexemeType.Name, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme(num, LexemeType.IntNumber, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -274,17 +275,17 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("if", LexemeType.KeyWord))
-			.add(new Lexeme("(", LexemeType.Brackets))
-			.add(new Lexeme("a", LexemeType.Name))
-			.add(new Lexeme("!=", LexemeType.BoolOp))
-			.add(new Lexeme("b", LexemeType.Name))
-			.add(new Lexeme(")", LexemeType.Brackets))
-			.add(new Lexeme("{", LexemeType.Brackets))
-			.add(new Lexeme("idx", LexemeType.Name))
-			.add(new Lexeme("=", LexemeType.DefineOp))
-			.add(new Lexeme("0", LexemeType.IntNumber))
-			.add(new Lexeme("}", LexemeType.Brackets))
+			.add(new Lexeme("if", LexemeType.KeyWord, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("a", LexemeType.Name, 1))
+			.add(new Lexeme("!=", LexemeType.BoolOp, 1))
+			.add(new Lexeme("b", LexemeType.Name, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme("{", LexemeType.Brackets, 1))
+			.add(new Lexeme("idx", LexemeType.Name, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme("0", LexemeType.IntNumber, 1))
+			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -297,17 +298,17 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("if", LexemeType.KeyWord))
-			.add(new Lexeme("(", LexemeType.Brackets))
-			.add(new Lexeme("a", LexemeType.Name))
-			.add(new Lexeme("==", LexemeType.BoolOp))
-			.add(new Lexeme("b", LexemeType.Name))
-			.add(new Lexeme(")", LexemeType.Brackets))
-			.add(new Lexeme("{", LexemeType.Brackets))
-			.add(new Lexeme("idx", LexemeType.Name))
-			.add(new Lexeme("=", LexemeType.DefineOp))
-			.add(new Lexeme("0", LexemeType.IntNumber))
-			.add(new Lexeme("}", LexemeType.Brackets))
+			.add(new Lexeme("if", LexemeType.KeyWord, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("a", LexemeType.Name, 1))
+			.add(new Lexeme("==", LexemeType.BoolOp, 1))
+			.add(new Lexeme("b", LexemeType.Name, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme("{", LexemeType.Brackets, 1))
+			.add(new Lexeme("idx", LexemeType.Name, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme("0", LexemeType.IntNumber, 1))
+			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -320,19 +321,19 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("if", LexemeType.KeyWord))
-			.add(new Lexeme("(", LexemeType.Brackets))
-			.add(new Lexeme("a", LexemeType.Name))
-			.add(new Lexeme("<=", LexemeType.BoolOp))
-			.add(new Lexeme("b", LexemeType.Name))
-			.add(new Lexeme(")", LexemeType.Brackets))
-			.add(new Lexeme("{", LexemeType.Brackets))
-			.add(new Lexeme("c", LexemeType.Name))
-			.add(new Lexeme("=", LexemeType.DefineOp))
-			.add(new Lexeme("a", LexemeType.Name))
-			.add(new Lexeme(">", LexemeType.BoolOp))
-			.add(new Lexeme("b", LexemeType.Name))
-			.add(new Lexeme("}", LexemeType.Brackets))
+			.add(new Lexeme("if", LexemeType.KeyWord, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("a", LexemeType.Name, 1))
+			.add(new Lexeme("<=", LexemeType.BoolOp, 1))
+			.add(new Lexeme("b", LexemeType.Name, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme("{", LexemeType.Brackets, 1))
+			.add(new Lexeme("c", LexemeType.Name, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme("a", LexemeType.Name, 1))
+			.add(new Lexeme(">", LexemeType.BoolOp, 1))
+			.add(new Lexeme("b", LexemeType.Name, 1))
+			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -345,10 +346,10 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("print", LexemeType.LangFunction))
-			.add(new Lexeme("(", LexemeType.Brackets))
-			.add(new Lexeme("abc", LexemeType.String))
-			.add(new Lexeme(")", LexemeType.Brackets))
+			.add(new Lexeme("print", LexemeType.LangFunction, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("abc", LexemeType.String, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -361,14 +362,14 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("print", LexemeType.LangFunction))
-			.add(new Lexeme("(", LexemeType.Brackets))
-			.add(new Lexeme("22", LexemeType.IntNumber))
-			.add(new Lexeme(",", LexemeType.Comma))
-			.add(new Lexeme("!=", LexemeType.String))
-			.add(new Lexeme(",", LexemeType.Comma))
-			.add(new Lexeme("0.0", LexemeType.DoubleNumber))
-			.add(new Lexeme(")", LexemeType.Brackets))
+			.add(new Lexeme("print", LexemeType.LangFunction, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("22", LexemeType.IntNumber, 1))
+			.add(new Lexeme(",", LexemeType.Comma, 1))
+			.add(new Lexeme("!=", LexemeType.String, 1))
+			.add(new Lexeme(",", LexemeType.Comma, 1))
+			.add(new Lexeme("0.0", LexemeType.DoubleNumber, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -381,29 +382,29 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexemesTable = lexicalAnalyzer.lexemesTable
 
 		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("arr", LexemeType.Name))
-			.add(new Lexeme(":", LexemeType.Colon))
-			.add(new Lexeme("Array", LexemeType.Type))
-			.add(new Lexeme("of", LexemeType.KeyWord))
-			.add(new Lexeme("Array", LexemeType.Type))
-			.add(new Lexeme("of", LexemeType.KeyWord))
-			.add(new Lexeme("Double", LexemeType.Type))
-			.add(new Lexeme("=", LexemeType.DefineOp))
-			.add(new Lexeme("[", LexemeType.Brackets))
-			.add(new Lexeme("[", LexemeType.Brackets))
-			.add(new Lexeme("2.0", LexemeType.DoubleNumber))
-			.add(new Lexeme(",", LexemeType.Comma))
-			.add(new Lexeme("3.1", LexemeType.DoubleNumber))
-			.add(new Lexeme("]", LexemeType.Brackets))
-			.add(new Lexeme(",", LexemeType.Comma))
-			.add(new Lexeme("[", LexemeType.Brackets))
-			.add(new Lexeme("9.2", LexemeType.DoubleNumber))
-			.add(new Lexeme(",", LexemeType.Comma))
-			.add(new Lexeme("0.3", LexemeType.DoubleNumber))
-			.add(new Lexeme(",", LexemeType.Comma))
-			.add(new Lexeme("4.1", LexemeType.DoubleNumber))
-			.add(new Lexeme("]", LexemeType.Brackets))
-			.add(new Lexeme("]", LexemeType.Brackets))
+			.add(new Lexeme("arr", LexemeType.Name, 1))
+			.add(new Lexeme(":", LexemeType.Colon, 1))
+			.add(new Lexeme("Array", LexemeType.Type, 1))
+			.add(new Lexeme("of", LexemeType.KeyWord, 1))
+			.add(new Lexeme("Array", LexemeType.Type, 1))
+			.add(new Lexeme("of", LexemeType.KeyWord, 1))
+			.add(new Lexeme("Double", LexemeType.Type, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme("[", LexemeType.Brackets, 1))
+			.add(new Lexeme("[", LexemeType.Brackets, 1))
+			.add(new Lexeme("2.0", LexemeType.DoubleNumber, 1))
+			.add(new Lexeme(",", LexemeType.Comma, 1))
+			.add(new Lexeme("3.1", LexemeType.DoubleNumber, 1))
+			.add(new Lexeme("]", LexemeType.Brackets, 1))
+			.add(new Lexeme(",", LexemeType.Comma, 1))
+			.add(new Lexeme("[", LexemeType.Brackets, 1))
+			.add(new Lexeme("9.2", LexemeType.DoubleNumber, 1))
+			.add(new Lexeme(",", LexemeType.Comma, 1))
+			.add(new Lexeme("0.3", LexemeType.DoubleNumber, 1))
+			.add(new Lexeme(",", LexemeType.Comma, 1))
+			.add(new Lexeme("4.1", LexemeType.DoubleNumber, 1))
+			.add(new Lexeme("]", LexemeType.Brackets, 1))
+			.add(new Lexeme("]", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
