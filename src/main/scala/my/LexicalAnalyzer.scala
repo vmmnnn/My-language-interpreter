@@ -32,7 +32,6 @@ object LexemeType extends Enumeration {
  */
 class LexicalAnalyzer {
 	private var lineNumber = 1
-	private var symbolNumber = 0
 
 	private var nCommentLineSlashes = 0
 	private var intNumberBuffer = 0
@@ -52,7 +51,6 @@ class LexicalAnalyzer {
 
 	def getState(): States.Value = state
 	def getLineNumber(): Int = lineNumber
-	def getSymbolNumber(): Int = symbolNumber
 
 	/**
 	 * Runs lexical analysis of the program given
@@ -60,7 +58,6 @@ class LexicalAnalyzer {
 	 */
 	def run(program: String): Unit = {
 		for (symbol <- program) {
-			symbolNumber += 1
 			processSymbol(symbol)
 		}
 		processSymbol(' ')  // to finalize
@@ -91,7 +88,17 @@ class LexicalAnalyzer {
 	 * @return string with current symbol position
 	 */
 	private def getSymbolPosition(): String = {
-		"Line number " + lineNumber + "; symbol number " + symbolNumber
+		f"Line number ${lineNumber}"
+	}
+
+	/**
+	 * Generates an error message to be printed inserting message given
+	 * @param message message with a particular error
+	 * @return error message
+	 */
+	private def getErrorMessage(message: String): String = {
+		val errorPositionString = getSymbolPosition()
+		errorHeader + message + "\n" + errorPositionString + "\n\n"
 	}
 
 	/**
@@ -114,7 +121,8 @@ class LexicalAnalyzer {
 			case s if (LexemeType.constantLexemes(LexemeType.Brackets).contains(s.toString)) =>
 				processBracketSymbol(symbol)
 			case s if (s.isLetter | s == "_") => processFirstNameSymbol(symbol)
-			case _ =>
+			case ' ' | '\t' =>
+			case _ => System.err.println(getErrorMessage(f"Unable to parse symbol ${symbol}"))
 		}
 	}
 
@@ -187,14 +195,9 @@ class LexicalAnalyzer {
 	 * @param symbol next symbol of the program
 	 */
 	private def processExclamationState(symbol: Char): Unit = {
-		def getCommentErrorMessage(): String = {
-			val errorPositionString = getSymbolPosition()
-			val errorMessage = f"$errorHeader Unable to parse lexeme: '!'\n"
-			errorMessage + errorPositionString + "\n\n"
-		}
-
 		def processError(): Unit = {
-			System.err.println(getCommentErrorMessage())
+			System.err.println(getErrorMessage(f"Unable to parse lexeme: '!'"))
+			state = States.H
 			processSymbol(symbol)
 		}
 
@@ -231,16 +234,10 @@ class LexicalAnalyzer {
 	 * @param symbol
 	 */
 	private def finishDefineState(symbol: Char): Unit = {
-		def getCommentErrorMessage(): String = {
-			val errorPositionString = getSymbolPosition()
-			val errorMessage = f"$errorHeader Unable to parse lexeme: ${"="*nDefineSymbols}\n"
-			errorMessage + errorPositionString + "\n\n"
-		}
-
 		nDefineSymbols match {
 			case 1 => lexemesTable.add(new Lexeme("=", LexemeType.DefineOp, lineNumber))
 			case 2 => lexemesTable.add(new Lexeme("==", LexemeType.BoolOp, lineNumber))
-			case _ => System.err.println(getCommentErrorMessage())
+			case _ => System.err.println(getErrorMessage(f"Unable to parse lexeme: ${"="*nDefineSymbols}"))
 		}
 
 		state = States.H
@@ -287,12 +284,6 @@ class LexicalAnalyzer {
 	 * @param symbol next symbol of the program
 	 */
 	private def finishName(symbol: Char): Unit = {
-		def getCommentErrorMessage(): String = {
-			val errorPositionString = getSymbolPosition()
-			val errorMessage = f"$errorHeader Unable to define lexeme type: ${nameBuffer}\n"
-			errorMessage + errorPositionString + "\n\n"
-		}
-
 		val typeOptions = LexemeType.constantLexemes.filter(pair => {
 			LexemeType.constantLexemes(pair._1).contains(nameBuffer)
 		}).toArray
@@ -300,7 +291,7 @@ class LexicalAnalyzer {
 		len match {
 			case 0 => lexemesTable.add(new Lexeme(nameBuffer, LexemeType.Name, lineNumber))
 			case 1 => lexemesTable.add(new Lexeme(nameBuffer, typeOptions(0)._1, lineNumber))
-			case _ => System.err.println(getCommentErrorMessage())
+			case _ => System.err.println(getErrorMessage(f"Unable to define lexeme type: ${nameBuffer}"))
 		}
 		state = States.H
 		nameBuffer = ""
@@ -393,26 +384,6 @@ class LexicalAnalyzer {
 	 * @param symbol next symbol of the program
 	 */
 	private def processCommentLineState(symbol: Char): Unit = {
-		/**
-		 * Generates an error message to be printed
-		 * in case one slash in comment line start is missing
-		 * @return error message
-		 */
-		def getCommentErrorMessage(): String = {
-			val errorPositionString = getSymbolPosition()
-			val errorMessage = errorHeader + "Invalid comment start: only one '/' found\n"
-			errorMessage + errorPositionString + "\n\n"
-		}
-
-		/**
-		 * Comment slash is missing => print message and skip current line
-		 */
-		def processCommentLineError(): Unit = {
-			state = States.SkipLine
-			nCommentLineSlashes = 0
-			System.err.println(getCommentErrorMessage())
-		}
-
 		def convertToDivisionOp(symbol: Char): Unit = {
 			processArithmeticOpSymbol('/')
 			processSymbol(symbol)
@@ -452,7 +423,6 @@ class LexicalAnalyzer {
 	 */
 	private def processNewLineSymbol(): Unit = {
 		lineNumber += 1
-		symbolNumber = 0
 	}
 
 	/**

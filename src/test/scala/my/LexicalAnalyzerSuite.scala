@@ -86,16 +86,6 @@ class LexicalAnalyzerSuite extends FunSuite {
 		assert(lexicalAnalyzer.getLineNumber() == expected)
 	}
 
-	test("symbolNumber calculation check") {
-		val lexicalAnalyzer = new LexicalAnalyzer
-		val programLine1 = "def main(): None {\n"
-		val programLine2 = "// comment\n"
-		val programLine3 = "println(100"
-		val program = programLine1 + programLine2 + programLine3
-		lexicalAnalyzer.run(program)
-		assert(lexicalAnalyzer.getSymbolNumber() == programLine3.length)
-	}
-
 	test("intNumber 254 to lexeme") {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val program = "254"
@@ -408,5 +398,88 @@ class LexicalAnalyzerSuite extends FunSuite {
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
+
+	test("====") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "===="
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		assert(lexemesTable.size == 0)
+	}
+
+	test("===") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "==="
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		assert(lexemesTable.size == 0)
+	}
+
+	test("$") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "$"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		assert(lexemesTable.size == 0)
+	}
+
+	test("!") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "!"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		assert(lexemesTable.size == 0)
+	}
+
+	test("!!") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "!!"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		assert(lexemesTable.size == 0)
+	}
+
+	test("! !") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "! !"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		assert(lexemesTable.size == 0)
+	}
+
+	test("! abc") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "! idx"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+		val expected: LexemeTable = new LexemeTable()
+			.add(new Lexeme("idx", LexemeType.Name, 1))
+
+		assert(sameLexemeTables(lexemesTable, expected))
+	}
+
+	test("#?") {
+		val lexicalAnalyzer = new LexicalAnalyzer
+		val program = "#?"
+
+		lexicalAnalyzer.run(program)
+		val lexemesTable = lexicalAnalyzer.lexemesTable
+
+		assert(lexemesTable.size == 0)
+	}
+
 
 }
