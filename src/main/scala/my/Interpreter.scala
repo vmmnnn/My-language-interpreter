@@ -13,6 +13,6 @@ object Interpreter extends Serializable {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		lexicalAnalyzer.run(program)
 
-		lexicalAnalyzer.printLexemeTable()
+		lexicalAnalyzer.lexemesTable.print()
 	}
 }
