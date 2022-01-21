@@ -49,8 +49,8 @@ class LexicalAnalyzer {
 
 	val lexemesTable: LexemeTable = new LexemeTable
 
-	def getState(): States.Value = state
-	def getLineNumber(): Int = lineNumber
+	def getState: States.Value = state
+	def getLineNumber: Int = lineNumber
 
 	/**
 	 * Runs lexical analysis of the program given

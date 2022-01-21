@@ -46,14 +46,14 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val program = "// comment"
 		lexicalAnalyzer.run(program)
-		assert(lexicalAnalyzer.getState() == States.CommentLine)
+		assert(lexicalAnalyzer.getState == States.CommentLine)
 	}
 
 	test("comment: /// comment") {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val program = "/// comment"
 		lexicalAnalyzer.run(program)
-		assert(lexicalAnalyzer.getState() == States.CommentLine)
+		assert(lexicalAnalyzer.getState == States.CommentLine)
 	}
 
 	test("comment: / //comment") {
@@ -64,7 +64,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val expected: LexemeTable = new LexemeTable()
 			.add(new Lexeme("/", LexemeType.ArithmeticOp, 1))
 
-		assert(lexicalAnalyzer.getState() == States.CommentLine)
+		assert(lexicalAnalyzer.getState == States.CommentLine)
 		assert(sameLexemeTables(expected, lexicalAnalyzer.lexemesTable))
 	}
 
@@ -72,7 +72,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val program = "// /comment"
 		lexicalAnalyzer.run(program)
-		assert(lexicalAnalyzer.getState() == States.CommentLine)
+		assert(lexicalAnalyzer.getState == States.CommentLine)
 	}
 
 	test("lineNumber calculation check") {
@@ -83,7 +83,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 			"}"
 		val expected = 4
 		lexicalAnalyzer.run(program)
-		assert(lexicalAnalyzer.getLineNumber() == expected)
+		assert(lexicalAnalyzer.getLineNumber == expected)
 	}
 
 	test("intNumber 254 to lexeme") {
