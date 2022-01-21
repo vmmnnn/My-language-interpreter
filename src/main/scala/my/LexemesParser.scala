@@ -1,7 +1,6 @@
 package my
 
 import my.LexemeType.{BoolVal, DoubleNumber, IntNumber}
-import my.VarType.Bool
 
 import scala.collection.mutable.Map
 
@@ -98,6 +97,16 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		VarType.getType(lexeme.get.value)
 	}
 
+	private def isValue(lexeme: Lexeme): Boolean = {
+		lexeme.lexemeType match {
+			case BoolVal => true
+			case DoubleNumber => true
+			case IntNumber => true
+			case LexemeType.String => true
+			case _ => false
+		}
+	}
+
 	private def getVariable(): Variable = {
 		val varName = lexeme.get.value
 		var varType: Option[VarType.Value] = None
@@ -118,6 +127,10 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 
 		def getValueSetType(): Option[Variable] = {
+			if (!isValue(lexeme.get)) {
+				sendError(f"Unexpected symbol ${lexeme.get.value}", lexeme.get.lineNumber)
+			}
+
 			val value = lexeme.get.value
 			val varType = lexeme.get.lexemeType match {
 				case BoolVal => VarType.Bool

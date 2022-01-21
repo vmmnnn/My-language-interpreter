@@ -54,11 +54,11 @@ class LexemesParserSuite extends FunSuite {
 		assert(sameVarTables(expected, globalVars))
 	}
 
-	test("idx: Boolean = 3") {
+	test("idx: Bool = 3") {
 		val lexemeTable: LexemeTable = new LexemeTable()
 			.add(new Lexeme("idx", LexemeType.Name, 1))
 			.add(new Lexeme(":", LexemeType.Colon, 1))
-			.add(new Lexeme("Boolean", LexemeType.Type, 1))
+			.add(new Lexeme("Bool", LexemeType.Type, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
 
@@ -83,4 +83,68 @@ class LexemesParserSuite extends FunSuite {
 
 		assert(sameVarTables(expected, globalVars))
 	}
+
+	test("x = >") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("x", LexemeType.Name, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme(">", LexemeType.BoolOp, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		intercept[Exception] { lexemesParser.run() }
+	}
+
+	test("x = ") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("x", LexemeType.Name, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		intercept[Exception] { lexemesParser.run() }
+	}
+
+	test("x : ") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("x", LexemeType.Name, 1))
+			.add(new Lexeme(":", LexemeType.Colon, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		intercept[Exception] { lexemesParser.run() }
+	}
+
+	test("x") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("x", LexemeType.Name, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		intercept[Exception] { lexemesParser.run() }
+	}
+
+	test("x = 25; fl: Bool = True") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("x", LexemeType.Name, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme("25", LexemeType.IntNumber, 1))
+			.add(new Lexeme("fl", LexemeType.Name, 2))
+			.add(new Lexeme(":", LexemeType.Colon, 2))
+			.add(new Lexeme("Bool", LexemeType.Type, 2))
+			.add(new Lexeme("=", LexemeType.DefineOp, 2))
+			.add(new Lexeme("True", LexemeType.BoolVal, 2))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		lexemesParser.run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar1: Variable = new Variable("x", VarType.Int, Option("25"))
+		val expectedVar2: Variable = new Variable("fl", VarType.Bool, Option("True"))
+		expected.setVal(expectedVar1)
+		expected.setVal(expectedVar2)
+
+		globalVars.print()
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
 }
