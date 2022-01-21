@@ -18,7 +18,7 @@ object VarType extends Enumeration {
 		}
 	}
 }
-
+/*
 class Variable(val name: String, val varType: VarType.Value, var value: Option[String]) {
 	def isSame(otherVariable: Variable): Boolean = {
 		if (name != otherVariable.name) return false
@@ -32,15 +32,29 @@ class Variable(val name: String, val varType: VarType.Value, var value: Option[S
 		else f"$name: ${varType} = ${value.get}"
 	}
 }
+*/
+
+class Value(val varType: VarType.Value, var value: Option[String]) {
+	def isSame(otherValue: Value): Boolean = {
+		if (value != otherValue.value) return false
+		if (varType != otherValue.varType) return false
+		true
+	}
+
+	override def toString: String = {
+		if (value.isEmpty) f"$varType"
+		else f"${varType}: ${value.get}"
+	}
+}
 
 class VarTable {
-	private val table: Map[String, Variable] = Map.empty  // TODO: name-field in Variable is abundant - rewrite
-	def getTable: Map[String, Variable] = table
+	private val table: Map[String, Value] = Map.empty
+	def getTable: Map[String, Value] = table
 
-	def getVal(name: String): Option[Variable] = table.get(name)
+	def getVal(name: String): Option[Value] = table.get(name)
 
-	def setVal(variable: Variable): Unit = {
-		table(variable.name) = variable
+	def setVal(name: String, value: Value): Unit = {
+		table(name) = value
 	}
 
 	def print(): Unit = {
@@ -58,8 +72,8 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		// program starts either from global variables or right from functions
 		while (lexeme.isDefined) {
 			if (lexeme.get.lexemeType == LexemeType.Name) {  // global variables
-				val variable = getVariable()
-				globalVars.setVal(variable)
+				val (name, value) = getVariable()
+				globalVars.setVal(name, value)
 			}
 		}
 	}
@@ -107,12 +121,13 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 	}
 
-	private def getVariable(): Variable = {
+	private def getVariable(): (String, Value) = {
 		val varName = lexeme.get.value
 		var varType: Option[VarType.Value] = None
+		var varValue: Option[String] = None
 
-		def getValueCheckType(): Option[Variable] = {
-			val value = lexeme.get.value
+		def getValueCheckType(): Unit = {
+			varValue = Option(lexeme.get.value)
 			val lineNumber = lexeme.get.lineNumber
 			lexeme.get.lexemeType match {
 				case BoolVal if varType.get == VarType.Bool =>
@@ -123,22 +138,19 @@ class LexemesParser(lexemeTable: LexemeTable) {
 				case _ =>
 					sendError(f"Types do not match: ${varType.get} expected, but ${lexeme.get.lexemeType} found", lineNumber)
 			}
-			Option(new Variable(varName, varType.get, Option(value)))
 		}
 
-		def getValueSetType(): Option[Variable] = {
+		def getValueSetType(): Unit = {
 			if (!isValue(lexeme.get)) {
 				sendError(f"Unexpected symbol ${lexeme.get.value}", lexeme.get.lineNumber)
 			}
-
-			val value = lexeme.get.value
-			val varType = lexeme.get.lexemeType match {
+			varValue = Option(lexeme.get.value)
+			varType = Option(lexeme.get.lexemeType match {
 				case BoolVal => VarType.Bool
 				case DoubleNumber => VarType.Double
 				case IntNumber => VarType.Int
 				case LexemeType.String => VarType.String
-			}
-			Option(new Variable(varName, varType, Option(value)))
+			})
 		}
 
 		nextLexemeCheckEmpty()
@@ -155,7 +167,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			if (varType.isEmpty) {
 				sendError(f"Unknown token '${varName}'", lineNumber)
 			}
-			return new Variable(varName, varType.get, None)
+			return (varName, new Value(varType.get, None))
 		}
 
 		// Neither colon for type nor '=' for value were found
@@ -164,18 +176,16 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 
 		// '=' => look for a value
-		val result: Option[Variable] = if (lexeme.get.lexemeType == LexemeType.DefineOp) {
+		if (lexeme.get.lexemeType == LexemeType.DefineOp) {
 			nextLexemeCheckEmpty()
 			if (varType.isEmpty) {  // define type according to the value
 				getValueSetType()
 			} else {  // type of the value and the declared one must be the same
 				getValueCheckType()
 			}
-		} else {  // no value provided
-			Option(new Variable(varName, varType.get, None))
 		}
 
 		lexeme = lexemeTable.next()
-		result.get
+		(varName, new Value(varType.get, varValue))
 	}
 }

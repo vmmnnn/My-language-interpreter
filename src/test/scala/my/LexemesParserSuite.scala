@@ -28,8 +28,8 @@ class LexemesParserSuite extends FunSuite {
 		val globalVars = lexemesParser.getGlobalVars
 
 		val expected: VarTable = new VarTable
-		val expectedVar: Variable = new Variable("idx", VarType.Int, Option("3"))
-		expected.setVal(expectedVar)
+		val expectedVar: Value = new Value(VarType.Int, Option("3"))
+		expected.setVal("idx", expectedVar)
 
 		assert(sameVarTables(expected, globalVars))
 	}
@@ -48,8 +48,8 @@ class LexemesParserSuite extends FunSuite {
 		val globalVars = lexemesParser.getGlobalVars
 
 		val expected: VarTable = new VarTable
-		val expectedVar: Variable = new Variable("x", VarType.Double, Option("3"))
-		expected.setVal(expectedVar)
+		val expectedVar: Value = new Value(VarType.Double, Option("3"))
+		expected.setVal("x", expectedVar)
 
 		assert(sameVarTables(expected, globalVars))
 	}
@@ -78,8 +78,8 @@ class LexemesParserSuite extends FunSuite {
 		val globalVars = lexemesParser.getGlobalVars
 
 		val expected: VarTable = new VarTable
-		val expectedVar: Variable = new Variable("s", VarType.String, None)
-		expected.setVal(expectedVar)
+		val expectedVar: Value = new Value(VarType.String, None)
+		expected.setVal("s", expectedVar)
 
 		assert(sameVarTables(expected, globalVars))
 	}
@@ -137,10 +137,10 @@ class LexemesParserSuite extends FunSuite {
 		val globalVars = lexemesParser.getGlobalVars
 
 		val expected: VarTable = new VarTable
-		val expectedVar1: Variable = new Variable("x", VarType.Int, Option("25"))
-		val expectedVar2: Variable = new Variable("fl", VarType.Bool, Option("True"))
-		expected.setVal(expectedVar1)
-		expected.setVal(expectedVar2)
+		val expectedVar1: Value = new Value(VarType.Int, Option("25"))
+		val expectedVar2: Value = new Value(VarType.Bool, Option("True"))
+		expected.setVal("x", expectedVar1)
+		expected.setVal("fl", expectedVar2)
 
 		globalVars.print()
 
