@@ -18,21 +18,6 @@ object VarType extends Enumeration {
 		}
 	}
 }
-/*
-class Variable(val name: String, val varType: VarType.Value, var value: Option[String]) {
-	def isSame(otherVariable: Variable): Boolean = {
-		if (name != otherVariable.name) return false
-		if (value != otherVariable.value) return false
-		if (varType != otherVariable.varType) return false
-		true
-	}
-
-	override def toString: String = {
-		if (value.isEmpty) f"$name: ${varType}"
-		else f"$name: ${varType} = ${value.get}"
-	}
-}
-*/
 
 class Value(val varType: VarType.Value, var value: Option[String]) {
 	def isSame(otherValue: Value): Boolean = {
