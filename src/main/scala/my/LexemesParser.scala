@@ -49,7 +49,8 @@ class VarTable {
 }
 
 /**
- * Parses lexemes given and runs the program
+ * Parses lexemes given and runs the program that starts from main function, usually 'main'<br>
+ * Main function should have no parameters and return None
  * @param lexemeTable result of lexical analysis
  * @param mainFunction function to be run, usually 'main'
  */
@@ -72,12 +73,10 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 			if (lexeme.get.lexemeType == LexemeType.Name) { // global variables
 				val (name, value) = getVariable()
 				globalVars.setVal(name, value)
-			} else {
-				if (lexeme.get.value == "def") { // function
+			} else if (lexeme.get.value == "def") { // function
 					parseFunction()
-				} else { // something else => error
+			} else { // something else => error
 					sendUnexpectedTokenError()
-				}
 			}
 		}
 	}
@@ -156,7 +155,7 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 
 	/**
 	 * Parse lexemes starting from the current position
-	 * and gets variable
+	 * and gets variable<br>
 	 * Should be called if current lexeme is a Name
 	 * @return pair (variable name, its value) to be added to variables table
 	 */
@@ -227,15 +226,12 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 	}
 
 	/**
-	 * Called when 'def' key word found
-	 * If it is 'main' function - run it
+	 * Called when 'def' key word found<br>
+	 * If it is 'main' function - run it<br>
 	 * Otherwise save it in function table to call it if needed
 	 */
 	private def parseFunction(): Unit = {
-		nextLexemeCheckEmpty()  // should be function name
-		if (lexeme.get.lexemeType != Name) {
-			sendUnexpectedTokenError()
-		}
+		checkNextLexemeType(Name, "Function name")
 		val name = lexeme.get.value
 		if (name == mainFunction) {
 			runMain()
@@ -251,23 +247,58 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 		}
 	}
 
-	private def runMain(): Unit = {}
+	/**
+	 * Main function should have no parameters and return None<br>
+	 * Should be called when current lexeme is function name
+	 * @return true/false - is the header right
+	 */
+	private def checkMainHeader(): Boolean = {
+		checkNextLexemeValue("(")
+		checkNextLexemeValue(")")
+		true  // TODO: finish function
+	}
 
 	/**
-	 * Skips lexemes until function ends (def name(...): Type {...})
+	 * Runs main function<br>
+	 * Called when current lexeme is a function name
+	 */
+	private def runMain(): Unit = {
+
+	}
+
+	/**
+	 * Gets next lexeme and check its type
+	 * @param expected expected type
+	 * @param expectedErrorMessage what was expected (to be printed in expected-found error)
+	 */
+	private def checkNextLexemeType(expected: LexemeType.Value, expectedErrorMessage: String): Unit = {
+		nextLexemeCheckEmpty()
+		if (lexeme.get.lexemeType != expected) {
+			sendExpectedFoundError(expectedErrorMessage)
+		}
+	}
+
+	/**
+	 * Gets next lexeme and check if we got token that was expected
+	 * @param expected expected token
+	 */
+	private def checkNextLexemeValue(expected: String): Unit = {
+		nextLexemeCheckEmpty()
+		if (lexeme.get.value != expected) {
+			sendExpectedFoundError(f"'$expected'")
+		}
+	}
+
+	/**
+	 * Skips lexemes until function ends (def name(...): Type {...})<br>
 	 * Should be called when lexeme is a function name
  	 */
 	private def skipFunction(): Unit = {
 		def functionParameters(): Unit = {
-			while (lexeme.get.lexemeType == Name) { // function parameters
-				nextLexemeCheckEmpty()
-				if (lexeme.get.lexemeType != Colon) {
-					sendExpectedFoundError("Type")
-				}
-				nextLexemeCheckEmpty()
-				if (lexeme.get.lexemeType != Type) {
-					sendExpectedFoundError("Type")
-				}
+			while (lexeme.get.lexemeType == Name) {
+				checkNextLexemeType(Colon, "Type")
+				checkNextLexemeType(Type, "Type")
+
 				nextLexemeCheckEmpty() // either ',' or ')'
 				if (lexeme.get.lexemeType == Comma) {
 					nextLexemeCheckEmpty()
@@ -289,18 +320,9 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 			if (lexeme.get.value != ")") {
 				sendUnexpectedTokenError()
 			}
-			nextLexemeCheckEmpty()
-			if (lexeme.get.lexemeType != Colon) {
-				sendExpectedFoundError("Function type")
-			}
-			nextLexemeCheckEmpty()
-			if (lexeme.get.lexemeType != Type) {
-				sendExpectedFoundError("Function type")
-			}
-			nextLexemeCheckEmpty() // function code starts: '{' expected
-			if (lexeme.get.value != "{") {
-				sendExpectedFoundError("'{'")
-			}
+			checkNextLexemeType(Colon, "Function type")
+			checkNextLexemeType(Type, "Function type")
+			checkNextLexemeValue("{")
 		}
 
 		def isPairedBrackets(open: String, close: String): Boolean = {

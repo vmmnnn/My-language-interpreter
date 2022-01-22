@@ -338,4 +338,21 @@ class LexemesParserSuite extends FunSuite {
 		intercept[Exception] { lexemesParser.run() }
 	}
 
+	test("Quotes not closed") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("def", LexemeType.KeyWord, 1))
+			.add(new Lexeme("f", LexemeType.Name, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme(":", LexemeType.Colon, 1))
+			.add(new Lexeme("None", LexemeType.Type, 1))
+			.add(new Lexeme("{", LexemeType.Brackets, 1))
+			.add(new Lexeme("s", LexemeType.Name, 2))
+			.add(new Lexeme("=", LexemeType.DefineOp, 2))
+			.add(new Lexeme("abc}}", LexemeType.String, 2))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		intercept[Exception] { lexemesParser.run() }
+	}
+
 }
