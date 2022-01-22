@@ -170,27 +170,13 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme(":", LexemeType.Colon, 1))
 			.add(new Lexeme("None", LexemeType.Type, 1))
 			.add(new Lexeme("{", LexemeType.Brackets, 1))
-			.add(new Lexeme("func2", LexemeType.Name, 2))
-			.add(new Lexeme("(", LexemeType.Brackets, 2))
-			.add(new Lexeme(")", LexemeType.Brackets, 2))
-			.add(new Lexeme("}", LexemeType.Brackets, 3))
-			.add(new Lexeme("x", LexemeType.Name, 4))
-			.add(new Lexeme("=", LexemeType.DefineOp, 4))
-			.add(new Lexeme("3", LexemeType.IntNumber, 4))
+			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
 		lexemesParser.run()
 
-		val globalVars = lexemesParser.getGlobalVars
 		val functionTable = lexemesParser.getFunctionTable
-
-		val expectedGlobalVars: VarTable = new VarTable
-		val expectedVar: Value = new Value(VarType.Int, Option("3"))
-		expectedGlobalVars.setVal("x", expectedVar)
-
-		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 1)
-
-		assert(sameVarTables(expectedGlobalVars, globalVars))
+		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2)
 		assert(sameFunctionTables(expectedFunctionTable, functionTable))
 	}
 
@@ -215,7 +201,7 @@ class LexemesParserSuite extends FunSuite {
 		val expectedVar: Value = new Value(VarType.Int, Option("0"))
 		expectedGlobalVars.setVal("p", expectedVar)
 
-		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 1, "func2" -> 7)
+		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2, "func2" -> 44)
 
 		assert(sameVarTables(expectedGlobalVars, globalVars))
 		assert(sameFunctionTables(expectedFunctionTable, functionTable))

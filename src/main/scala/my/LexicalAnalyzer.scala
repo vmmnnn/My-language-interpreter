@@ -463,8 +463,13 @@ class LexemeTable {
 	private var idxLexeme = 0
 	private var currentLexeme: Option[Lexeme] = None
 
-	def current(): Option[Lexeme] = currentLexeme
-	def size(): Int = n
+	def current: Option[Lexeme] = currentLexeme
+	def size: Int = n
+	def getLexemeIdx: Int = idxLexeme
+	def setLexemeIdx(newIdx: Int): Unit = {
+		idxLexeme = newIdx
+	}
+
 
 	/**
 	 * Prints table
