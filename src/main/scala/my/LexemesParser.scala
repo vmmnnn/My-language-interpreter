@@ -1,6 +1,5 @@
 package my
 
-import com.sun.org.apache.bcel.internal.classfile.LineNumber
 import my.LexemeType.{BoolVal, Brackets, Colon, Comma, DoubleNumber, IntNumber, Name, Type}
 
 import scala.collection.mutable.Map
