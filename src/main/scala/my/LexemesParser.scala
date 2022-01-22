@@ -19,6 +19,11 @@ object VarType extends Enumeration {
 	}
 }
 
+/**
+ * Value of the variable in variables table
+ * @param varType variable type
+ * @param value variable value in a string format
+ */
 class Value(val varType: VarType.Value, var value: Option[String]) {
 	def isSame(otherValue: Value): Boolean = {
 		if (value != otherValue.value) return false
@@ -32,6 +37,9 @@ class Value(val varType: VarType.Value, var value: Option[String]) {
 	}
 }
 
+/**
+ * Class for variables table
+ */
 class VarTable {
 	private val table: Map[String, Value] = Map.empty
 	def getTable: Map[String, Value] = table

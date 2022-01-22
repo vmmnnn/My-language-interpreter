@@ -26,7 +26,7 @@ object LexemeType extends Enumeration {
 	)
 }
 
-/*
+/**
 	Finite-state machine
 	Use run-function and get result in lexemesTable variable
  */
@@ -447,6 +447,12 @@ class LexicalAnalyzer {
 
 }
 
+/**
+ * Each program token is considered as a lexeme with a particular type (name, bracket, key-word etc)
+ * @param value token itself
+ * @param lexemeType type
+ * @param lineNumber line in which this token was found (for error printing)
+ */
 class Lexeme(val value: String, val lexemeType: LexemeType.Value, val lineNumber: Int) {
 	def this(intNumber: Int, lineNumber: Int) {
 		this(intNumber.toString, LexemeType.IntNumber, lineNumber)
@@ -457,6 +463,9 @@ class Lexeme(val value: String, val lexemeType: LexemeType.Value, val lineNumber
 	override def toString: String = f"${value} (${lineNumber}): ${lexemeType.toString}"
 }
 
+/**
+ * Class for lexemes table to parse them and run the program after lexical analysis
+ */
 class LexemeTable {
 	private val table: ArrayBuffer[Lexeme] = ArrayBuffer()
 	private var n = 0  // table size
