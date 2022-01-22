@@ -47,6 +47,10 @@ class VarTable {
 	}
 }
 
+/**
+ * Parse lexemes given and runs the program
+ * @param lexemeTable result of lexical analysis
+ */
 class LexemesParser(lexemeTable: LexemeTable) {
 	private var lexeme = lexemeTable.next()
 	private val globalVars = new VarTable
@@ -96,6 +100,11 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		VarType.getType(lexeme.get.value)
 	}
 
+	/**
+	 * Checks if lexeme is Int, Double, Bool or String value
+	 * @param lexeme lexeme to be checked
+	 * @return true/false
+	 */
 	private def isValue(lexeme: Lexeme): Boolean = {
 		lexeme.lexemeType match {
 			case BoolVal => true
@@ -106,6 +115,12 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 	}
 
+	/**
+	 * Parse lexemes starting from the current position
+	 * and gets variable
+	 * Should be called if current lexeme is a Name
+	 * @return pair (variable name, its value) to be added to variables table
+	 */
 	private def getVariable(): (String, Value) = {
 		val varName = lexeme.get.value
 		var varType: Option[VarType.Value] = None
@@ -161,7 +176,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 
 		// '=' => look for a value
-		if (lexeme.get.lexemeType == LexemeType.DefineOp) {
+		if (lexeme.get.lexemeType == LexemeType.DefineOp) {   // TODO: value is a boolean or arithmetic expression
 			nextLexemeCheckEmpty()
 			if (varType.isEmpty) {  // define type according to the value
 				getValueSetType()
