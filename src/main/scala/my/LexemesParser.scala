@@ -67,7 +67,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	/**
 	 * Starts parsing
 	 */
-	def parse(): Unit = {
+	def parse(): LexemesParser = {
 		// program starts either from global variables or right from functions
 		while (lexeme.isDefined) {
 			if (lexeme.get.lexemeType == LexemeType.Name) { // global variables
@@ -79,6 +79,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 				sendUnexpectedTokenError()
 			}
 		}
+		this
 	}
 
 	/**
@@ -94,6 +95,18 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		lexemeTable.setLexemeIdx(mainFunctionLexemeIdx.get)
 		lexeme = lexemeTable.current
 		checkMainHeader()
+		nextLexemeCheckEmpty()
+		while (lexeme.get.value != "}") {
+			runBlock()
+		}
+	}
+
+	/**
+	 * Executes next command or command block (if, for etc)<br>
+	 * Should be called when current lexeme is the block beginning
+	 */
+	private def runBlock(): Unit = {
+		// TODO: write the function
 	}
 
 	/**
@@ -101,7 +114,17 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Should be called when current lexeme is
 	 */
 	private def checkMainHeader(): Unit = {
-// TODO: write function
+		checkNextLexemeValue("(")
+		nextLexemeCheckEmpty()
+		if (lexeme.get.value != ")") {
+			sendExpectedFoundError(f"Main function should not have parameters: )")
+		}
+		checkNextLexemeType(Colon, "Main function type (None)")
+		nextLexemeCheckEmpty()
+		if (lexeme.get.value != "None") {
+			sendExpectedFoundError(f"Main function type (None)")
+		}
+		checkNextLexemeValue("{")
 	}
 
 	/**

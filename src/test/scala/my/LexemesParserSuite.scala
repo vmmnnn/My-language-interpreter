@@ -369,4 +369,33 @@ class LexemesParserSuite extends FunSuite {
 		intercept[Exception] { lexemesParser.parse() }
 	}
 
+	test("def main(): Int {}") {
+		val program = "def main(): Int {}"
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse()
+		intercept[Exception] { lexemesParser.run() }
+	}
+
+	test("def main(p: Double): None {}") {
+		val program = "def main(p: Double): None {}"
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse()
+		intercept[Exception] { lexemesParser.run() }
+	}
+
+	test("def f(p: Double): None {}") {
+		val program = "def f(p: Double): None {}"
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse()
+		intercept[Exception] { lexemesParser.run("f") }
+	}
 }
