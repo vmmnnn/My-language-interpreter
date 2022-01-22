@@ -470,7 +470,6 @@ class LexemeTable {
 		idxLexeme = newIdx
 	}
 
-
 	/**
 	 * Prints table
 	 */

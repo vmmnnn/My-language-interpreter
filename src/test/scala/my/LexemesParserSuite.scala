@@ -37,7 +37,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		lexemesParser.run()
+		lexemesParser.parse()
 
 		val globalVars = lexemesParser.getGlobalVars
 
@@ -57,7 +57,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		lexemesParser.run()
+		lexemesParser.parse()
 
 		val globalVars = lexemesParser.getGlobalVars
 
@@ -77,7 +77,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("s: String") {
@@ -87,7 +87,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("String", LexemeType.Type, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		lexemesParser.run()
+		lexemesParser.parse()
 
 		val globalVars = lexemesParser.getGlobalVars
 
@@ -105,7 +105,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme(">", LexemeType.BoolOp, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("x = ") {
@@ -114,7 +114,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("x : ") {
@@ -123,7 +123,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme(":", LexemeType.Colon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("x") {
@@ -131,7 +131,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("x", LexemeType.Name, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("x = 25; fl: Bool = True") {
@@ -146,7 +146,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("True", LexemeType.BoolVal, 2))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		lexemesParser.run()
+		lexemesParser.parse()
 
 		val globalVars = lexemesParser.getGlobalVars
 
@@ -173,7 +173,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		lexemesParser.run()
+		lexemesParser.parse()
 
 		val functionTable = lexemesParser.getFunctionTable
 		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2)
@@ -192,7 +192,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		lexemesParser.run()
+		lexemesParser.parse()
 
 		val globalVars = lexemesParser.getGlobalVars
 		val functionTable = lexemesParser.getFunctionTable
@@ -207,13 +207,41 @@ class LexemesParserSuite extends FunSuite {
 		assert(sameFunctionTables(expectedFunctionTable, functionTable))
 	}
 
+	test("2 functions with parameters and main function") {
+		val program = "def func1(p1: Int, p2: Double): Bool {\n" +
+			"x = (2+2)/2\n" +
+			"if (func2(p1) == 1) {return False}\n" +
+			"return True\n" +
+			"}\n" +
+			"def main(): None {print(func1(2, 3))}" +
+			"p = 0\n" +
+			"def func2(p3: Int): Double {return (p+p3)/p3}\n"
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse()
+
+		val globalVars = lexemesParser.getGlobalVars
+		val functionTable = lexemesParser.getFunctionTable
+
+		val expectedGlobalVars: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("0"))
+		expectedGlobalVars.setVal("p", expectedVar)
+
+		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2, "func2" -> 61, "main" -> 41)
+
+		assert(sameVarTables(expectedGlobalVars, globalVars))
+		assert(sameFunctionTables(expectedFunctionTable, functionTable))
+	}
+
 	test("Function type missed") {
 		val program = "def f(): {}"
 		val lexicalAnalyzer = new LexicalAnalyzer
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Colon missed") {
@@ -222,7 +250,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("'def' missed") {
@@ -231,7 +259,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Function name missed") {
@@ -240,7 +268,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Parameter open bracket missed") {
@@ -249,7 +277,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Parameter close bracket missed") {
@@ -258,7 +286,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Parameter brackets missed") {
@@ -267,7 +295,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Parameter code open brackets missed") {
@@ -276,7 +304,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Parameter code close brackets missed") {
@@ -285,7 +313,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Brackets mismatched: no ')'") {
@@ -294,7 +322,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Brackets mismatched: no '('") {
@@ -303,7 +331,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Brackets mismatched: no '}'") {
@@ -312,7 +340,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Brackets mismatched: no '{'") {
@@ -321,7 +349,7 @@ class LexemesParserSuite extends FunSuite {
 		lexicalAnalyzer.run(program)
 
 		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 	test("Quotes not closed") {
@@ -338,7 +366,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme("abc}}", LexemeType.String, 2))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		intercept[Exception] { lexemesParser.run() }
+		intercept[Exception] { lexemesParser.parse() }
 	}
 
 }

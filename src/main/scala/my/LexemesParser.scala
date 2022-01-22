@@ -48,12 +48,10 @@ class VarTable {
 }
 
 /**
- * Parses lexemes given and runs the program that starts from main function, usually 'main'<br>
- * Main function should have no parameters and return None
+ * Parses lexemes given, fills function and globalVars tables (parse function) and runs the program (run function)
  * @param lexemeTable result of lexical analysis
- * @param mainFunction function to be run, usually 'main'
  */
-class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
+class LexemesParser(lexemeTable: LexemeTable) {
 	// current lexeme, updates during parsing
 	private var lexeme = lexemeTable.next()
 
@@ -66,18 +64,44 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 	def getGlobalVars: VarTable = globalVars
 	def getFunctionTable: Map[String, Int] = functionTable
 
-	def run(): Unit = {
+	/**
+	 * Starts parsing
+	 */
+	def parse(): Unit = {
 		// program starts either from global variables or right from functions
 		while (lexeme.isDefined) {
 			if (lexeme.get.lexemeType == LexemeType.Name) { // global variables
 				val (name, value) = getVariable()
 				globalVars.setVal(name, value)
 			} else if (lexeme.get.value == "def") { // function
-					parseFunction()
+				parseFunction()
 			} else { // something else => error
-					sendUnexpectedTokenError()
+				sendUnexpectedTokenError()
 			}
 		}
+	}
+
+	/**
+	 * Start interpreting. MainFunction will be called<br>
+	 * Main function should have no parameters and return None
+	 * @param mainFunction function to be called, usually 'main'
+	 */
+	def run(mainFunction: String = "main"): Unit = {
+		val mainFunctionLexemeIdx = functionTable.get(mainFunction)
+		if (mainFunctionLexemeIdx.isEmpty) {
+			sendError(f"No function with name $mainFunction is provided", lexemeTable.size)
+		}
+		lexemeTable.setLexemeIdx(mainFunctionLexemeIdx.get)
+		lexeme = lexemeTable.current
+		checkMainHeader()
+	}
+
+	/**
+	 * Check if main function has no parameters and returns None<br>
+	 * Should be called when current lexeme is
+	 */
+	private def checkMainHeader(): Unit = {
+// TODO: write function
 	}
 
 	/**
@@ -239,25 +263,6 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 		}
 		functionTable(name) = lexemeTable.getLexemeIdx
 		skipFunction()
-	}
-
-	/**
-	 * Main function should have no parameters and return None<br>
-	 * Should be called when current lexeme is function name
-	 * @return true/false - is the header right
-	 */
-	private def checkMainHeader(): Unit = {
-		checkNextLexemeValue("(")
-		checkNextLexemeValue(")")
-
-	}
-
-	/**
-	 * Runs main function<br>
-	 * Called when current lexeme is a function name
-	 */
-	private def runMain(): Unit = {
-		checkMainHeader()
 	}
 
 	/**
