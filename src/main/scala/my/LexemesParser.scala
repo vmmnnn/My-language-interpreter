@@ -227,24 +227,19 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 
 	/**
 	 * Called when 'def' key word found<br>
-	 * If it is 'main' function - run it<br>
-	 * Otherwise save it in function table to call it if needed
+	 * Saves functions names with its idx in lexemeTable in function table to call it if needed
 	 */
 	private def parseFunction(): Unit = {
 		checkNextLexemeType(Name, "Function name")
 		val name = lexeme.get.value
-		if (name == mainFunction) {
-			runMain()
-		} else {
-			val checkIfExists = functionTable.get(name)
-			if (checkIfExists.isDefined) {  // the function has been already defined
-				val errorMessage = f"Duplicated function name $name."
-				val previousDefinitionMessage = f"Previous declaration in line $checkIfExists"
-				sendError(f"$errorMessage\n$previousDefinitionMessage", lexeme.get.lineNumber)
-			}
-			functionTable(name) = lexeme.get.lineNumber
-			skipFunction()
+		val checkIfExists = functionTable.get(name)
+		if (checkIfExists.isDefined) {  // the function has been already defined
+			val errorMessage = f"Duplicated function name $name."
+			val previousDefinitionMessage = f"Previous declaration in line $checkIfExists"
+			sendError(f"$errorMessage\n$previousDefinitionMessage", lexeme.get.lineNumber)
 		}
+		functionTable(name) = lexemeTable.getLexemeIdx
+		skipFunction()
 	}
 
 	/**
@@ -252,10 +247,10 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 	 * Should be called when current lexeme is function name
 	 * @return true/false - is the header right
 	 */
-	private def checkMainHeader(): Boolean = {
+	private def checkMainHeader(): Unit = {
 		checkNextLexemeValue("(")
 		checkNextLexemeValue(")")
-		true  // TODO: finish function
+
 	}
 
 	/**
@@ -263,7 +258,7 @@ class LexemesParser(lexemeTable: LexemeTable, mainFunction: String = "main") {
 	 * Called when current lexeme is a function name
 	 */
 	private def runMain(): Unit = {
-
+		checkMainHeader()
 	}
 
 	/**
