@@ -16,7 +16,8 @@ class Interpreter(val program: String) {
 	def run(mainFunction: String = "main"): Unit = {
 		if (lexemesParser.isEmpty) {
 			System.err.println(f"First, parse function should be called")
+		} else {
+			lexemesParser.get.run(mainFunction)
 		}
-		lexemesParser.get.run(mainFunction)
 	}
 }
