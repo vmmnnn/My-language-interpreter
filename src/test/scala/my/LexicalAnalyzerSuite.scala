@@ -240,11 +240,11 @@ class LexicalAnalyzerSuite extends FunSuite {
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
-	test("idx=0") {
+	test("idx=0;") {
 		val lexicalAnalyzer = new LexicalAnalyzer
 		val identifier = "idx"
 		val num = "0"
-		val program = f"${identifier}=${num}"
+		val program = f"${identifier}=${num};"
 
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
@@ -253,13 +253,14 @@ class LexicalAnalyzerSuite extends FunSuite {
 			.add(new Lexeme(identifier, LexemeType.Name, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 			.add(new Lexeme(num, LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
-	test("if (a != b) {idx=0}") {
+	test("if (a != b) {idx=0;}") {
 		val lexicalAnalyzer = new LexicalAnalyzer
-		val program = "if (a != b) {idx=0}"
+		val program = "if (a != b) {idx=0;}"
 
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
@@ -275,14 +276,15 @@ class LexicalAnalyzerSuite extends FunSuite {
 			.add(new Lexeme("idx", LexemeType.Name, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 			.add(new Lexeme("0", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
-	test("if (a == b) {idx=0}") {
+	test("if (a == b) {idx=0;}") {
 		val lexicalAnalyzer = new LexicalAnalyzer
-		val program = "if (a == b) {idx=0}"
+		val program = "if (a == b) {idx=0;}"
 
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
@@ -298,14 +300,15 @@ class LexicalAnalyzerSuite extends FunSuite {
 			.add(new Lexeme("idx", LexemeType.Name, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 			.add(new Lexeme("0", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
 
-	test("if (a <= b) {c = a >b}") {
+	test("if (a <= b) {c = a >b;}") {
 		val lexicalAnalyzer = new LexicalAnalyzer
-		val program = "if (a <= b) {c = a >b}"
+		val program = "if (a <= b) {c = a >b;}"
 
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
@@ -323,6 +326,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 			.add(new Lexeme("a", LexemeType.Name, 1))
 			.add(new Lexeme(">", LexemeType.BoolOp, 1))
 			.add(new Lexeme("b", LexemeType.Name, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 			.add(new Lexeme("}", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
@@ -330,7 +334,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 
 	test("print('abc')") {
 		val lexicalAnalyzer = new LexicalAnalyzer
-		val program = "print(" + '"'.toString + "abc" + '"'.toString + ")"
+		val program = "print(" + '"'.toString + "abc" + '"'.toString + ");"
 
 		lexicalAnalyzer.run(program)
 		val lexemesTable = lexicalAnalyzer.lexemesTable
@@ -340,6 +344,7 @@ class LexicalAnalyzerSuite extends FunSuite {
 			.add(new Lexeme("(", LexemeType.Brackets, 1))
 			.add(new Lexeme("abc", LexemeType.String, 1))
 			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}
@@ -360,41 +365,6 @@ class LexicalAnalyzerSuite extends FunSuite {
 			.add(new Lexeme(",", LexemeType.Comma, 1))
 			.add(new Lexeme("0.0", LexemeType.DoubleNumber, 1))
 			.add(new Lexeme(")", LexemeType.Brackets, 1))
-
-		assert(sameLexemeTables(expected, lexemesTable))
-	}
-
-	test("arr: Array of Array of Double = [[2.0, 3.1], [9.2, 0.3, 4.1]]") {
-		val lexicalAnalyzer = new LexicalAnalyzer
-		val program = "arr: Array of Array of Double = [[2.0, 3.1], [9.2, 0.3, 4.1]]"
-
-		lexicalAnalyzer.run(program)
-		val lexemesTable = lexicalAnalyzer.lexemesTable
-
-		val expected: LexemeTable = new LexemeTable()
-			.add(new Lexeme("arr", LexemeType.Name, 1))
-			.add(new Lexeme(":", LexemeType.Colon, 1))
-			.add(new Lexeme("Array", LexemeType.Type, 1))
-			.add(new Lexeme("of", LexemeType.KeyWord, 1))
-			.add(new Lexeme("Array", LexemeType.Type, 1))
-			.add(new Lexeme("of", LexemeType.KeyWord, 1))
-			.add(new Lexeme("Double", LexemeType.Type, 1))
-			.add(new Lexeme("=", LexemeType.DefineOp, 1))
-			.add(new Lexeme("[", LexemeType.Brackets, 1))
-			.add(new Lexeme("[", LexemeType.Brackets, 1))
-			.add(new Lexeme("2.0", LexemeType.DoubleNumber, 1))
-			.add(new Lexeme(",", LexemeType.Comma, 1))
-			.add(new Lexeme("3.1", LexemeType.DoubleNumber, 1))
-			.add(new Lexeme("]", LexemeType.Brackets, 1))
-			.add(new Lexeme(",", LexemeType.Comma, 1))
-			.add(new Lexeme("[", LexemeType.Brackets, 1))
-			.add(new Lexeme("9.2", LexemeType.DoubleNumber, 1))
-			.add(new Lexeme(",", LexemeType.Comma, 1))
-			.add(new Lexeme("0.3", LexemeType.DoubleNumber, 1))
-			.add(new Lexeme(",", LexemeType.Comma, 1))
-			.add(new Lexeme("4.1", LexemeType.DoubleNumber, 1))
-			.add(new Lexeme("]", LexemeType.Brackets, 1))
-			.add(new Lexeme("]", LexemeType.Brackets, 1))
 
 		assert(sameLexemeTables(expected, lexemesTable))
 	}

@@ -11,7 +11,7 @@ object States extends Enumeration {
 // Stores key words
 object LexemeType extends Enumeration {
 	type LexemeType = Value
-	val ArithmeticOp, BoolOp, BoolVal, Brackets, Colon, Comma, DefineOp, DoubleNumber, IntNumber, KeyWord, LangFunction, Name, String, Type = Value
+	val ArithmeticOp, BoolOp, BoolVal, Brackets, Colon, Semicolon, Comma, DefineOp, DoubleNumber, IntNumber, KeyWord, LangFunction, Name, String, Type = Value
 	val constantLexemes = Map(
 		ArithmeticOp -> Array("+", "-", "*", "/", "%"),
 		BoolOp -> Array("and", "or", "not", "==", "!=", ">", ">=", "<", "<="),
@@ -19,6 +19,7 @@ object LexemeType extends Enumeration {
 		Brackets -> Array("(", ")", "[", "]", "{", "}"),
 		DefineOp -> Array("="),
 		Colon -> Array(":"),
+		Semicolon -> Array(";"),
 		Comma -> Array(","),
 		KeyWord -> Array("def", "for", "from", "if", "else", "of", "return", "step", "to", "while"),
 		LangFunction -> Array("read", "print", "println"),
@@ -110,6 +111,7 @@ class LexicalAnalyzer {
 			case '\n' => processNewLineSymbol()
 			case '/' => processFirstCommentLineSlashSymbol()
 			case ':' => processColonSymbol()
+			case ';' => processSemicolonSymbol()
 			case ',' => processCommaSymbol()
 			case '=' => processFirstDefineSymbol()
 			case '!' => processExclamationSymbol()
@@ -122,7 +124,13 @@ class LexicalAnalyzer {
 				processBracketSymbol(symbol)
 			case s if (s.isLetter | s == "_") => processFirstNameSymbol(symbol)
 			case ' ' | '\t' =>
-			case _ => System.err.println(getErrorMessage(f"Unable to parse symbol ${symbol}"))
+			case _ => checkSymbol(symbol)
+		}
+	}
+
+	def checkSymbol(symbol: Char): Unit = {
+		if (symbol.toInt >= 32) {
+			System.err.println(getErrorMessage(f"Unable to parse symbol ${symbol}"))
 		}
 	}
 
@@ -246,14 +254,21 @@ class LexicalAnalyzer {
 	}
 
 	/**
-	 * adds ':' to lexemeTable
+	 * Adds ':' to lexemeTable
 	 */
 	private def processColonSymbol(): Unit = {
 		lexemesTable.add(new Lexeme(":", LexemeType.Colon, lineNumber))
 	}
 
 	/**
-	 * adds ',' to lexemeTable
+	 * Adds ';' to lexemeTable
+	 */
+	private def processSemicolonSymbol(): Unit = {
+		lexemesTable.add(new Lexeme(";", LexemeType.Semicolon, lineNumber))
+	}
+
+	/**
+	 * Adds ',' to lexemeTable
 	 */
 	private def processCommaSymbol(): Unit = {
 		lexemesTable.add(new Lexeme(",", LexemeType.Comma, lineNumber))
