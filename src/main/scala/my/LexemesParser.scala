@@ -1,13 +1,13 @@
 package my
 
-import my.LexemeType.{BoolVal, Brackets, Colon, Comma, DoubleNumber, IntNumber, Name, Type}
+import my.LexemeType.{ArithmeticOp, BoolOp, BoolVal, Brackets, Colon, Comma, DoubleNumber, IntNumber, Name, Semicolon, Type}
 
 import scala.collection.mutable.Map
 
 
 object VarType extends Enumeration {
 	type VarType = Value
-	val Array, Bool, Double, Int, String = Value
+	val Array, Bool, Double, Int, String, None = Value
 	def getType(str: String): VarType.Value = {
 		str match {
 			case "Array" => Array
@@ -15,6 +15,7 @@ object VarType extends Enumeration {
 			case "Double" => Double
 			case "Int" => Int
 			case "String" => String
+			case "None" => None
 		}
 	}
 }
@@ -69,6 +70,15 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	// table of functions: name, 'def'-lexeme position in LexemeTable
 	private val functionTable: Map[String, Int] = Map.empty
 
+	private val priorityOp: Map[String, Int] = Map(
+		"not" -> 0,
+		"*" -> 1, "/" -> 1, "%" -> 1,
+		"+" -> 2, "-" -> 2,
+		">" -> 3, ">=" -> 3, "<" -> 3, "<=" -> 3,
+		"==" -> 4, "!=" -> 4,
+		"and" -> 5, "or" -> 5
+	)
+
 	def getGlobalVars: VarTable = globalVars
 	def getFunctionTable: Map[String, Int] = functionTable
 
@@ -113,15 +123,123 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Executes next command or command block (if, for etc)<br>
 	 * Should be called when current lexeme is the block beginning
 	 */
-	private def runBlock(): Unit = {
-		// TODO: write the function
+	private[my] def runBlock(): Unit = {
+		lexeme.get.value match {
+			case "print" => runPrint(false)
+			case "println" => runPrint(true)
+		}
 	}
+
+	/**
+	 * Runs model language function 'print' or 'println' with newLine is false or true respectively
+	 * @param newLine flag that shows if '\n' should be printed at the end
+	 */
+	private[my] def runPrint(newLine: Boolean): Unit = {
+		checkNextLexemeValue("(")
+		nextLexemeCheckEmpty()
+		val printValue = compute()
+	}
+
+	/*
+			var bracketsStack: List[String] = List.empty
+			bracketsStack = "{" :: bracketsStack
+
+			val stackTop = bracketsStack.head
+			bracketsStack = bracketsStack.tail
+	 */
+
+	/**
+	 * Computes arithmetic or boolean expression that starts from current lexeme<br>
+	 * Works with Reverse Polish notation
+	 * @return Value: expression type and its result in a string format
+	 */
+	private[my] def compute(): Value = {
+		// to add brackets and operations as RPN suggests
+		var stackOp: List[Lexeme] =
+			List(new Lexeme("(", LexemeType.Brackets, lexeme.get.lineNumber))
+		var RPN: List[Lexeme] = List.empty
+		var stackCompute: List[Lexeme] = List.empty
+
+		def moveToRPN(): Unit = {
+			var stackOpHead = stackOp.head
+			while (stackOpHead.value != "(") {
+				stackOp = stackOp.tail
+				RPN = RPN :+ stackOpHead
+				stackOpHead = stackOp.head
+			}
+			stackOp = stackOp.tail
+			nextLexemeCheckEmpty()
+		}
+
+		def processOp(): Unit = {
+			var stackOpHead = stackOp.head
+			if (stackOpHead.value == "(") {
+				stackOp = lexeme.get :: stackOp
+			} else if (priorityOp(stackOpHead.value) > priorityOp(lexeme.get.value)) {
+				stackOp = lexeme.get :: stackOp
+			} else {
+				var lessPriority = true
+				while (lessPriority) {
+					stackOp = stackOp.tail
+					RPN = RPN :+ stackOpHead
+					stackOpHead = stackOp.head
+					if (!Set(ArithmeticOp, BoolOp).contains(stackOpHead.lexemeType)) {
+						lessPriority = false
+					} else if (priorityOp(stackOpHead.value) > priorityOp(lexeme.get.value)) {
+						lessPriority = false
+					}
+				}
+				stackOp = lexeme.get :: stackOp
+			}
+			nextLexemeCheckEmpty()
+		}
+
+		def addToRPN(): Unit = {
+			RPN = RPN :+ lexeme.get
+			nextLexemeCheckEmpty()
+		}
+
+		def addToStackOp(): Unit = {
+			stackOp = lexeme.get :: stackOp
+			nextLexemeCheckEmpty()
+		}
+
+		def createRPN(): Unit = {
+			val expressionLineNumber = lexeme.get.lineNumber
+			while (lexeme.get.lexemeType != Semicolon) {
+				lexeme.get.lexemeType match {
+					case IntNumber | DoubleNumber | BoolVal => addToRPN()
+					case Name if (globalVars.getVal(lexeme.get.value).isDefined) => addToRPN()
+					case Brackets if (lexeme.get.value == "(") => addToStackOp()
+					case Brackets if (lexeme.get.value == ")") => moveToRPN()
+					case BoolOp | ArithmeticOp => processOp()
+				}
+			}
+			var stackOpHead = stackOp.head
+			while (stackOpHead.value != "(") {
+				RPN = RPN :+ stackOpHead
+				stackOp = stackOp.tail
+				stackOpHead = stackOp.head
+			}
+			if (stackOp.length != 1) {
+				sendError("Expression cannot be computed: parenthesis is not closed", expressionLineNumber)
+			}
+		}
+
+		def evaluate(): Value = {
+			new Value(VarType.Int, Option("24"))  // TODO write the function
+		}
+
+		createRPN()
+		evaluate()
+	}
+
 
 	/**
 	 * Check if main function has no parameters and returns None<br>
 	 * Should be called when current lexeme is
 	 */
-	private def checkMainHeader(): Unit = {
+	private[my] def checkMainHeader(): Unit = {
 		checkNextLexemeValue("(")
 		nextLexemeCheckEmpty()
 		if (lexeme.get.value != ")") {
@@ -139,7 +257,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Sends a message to stderr and throws an Exception
 	 * @param message message to be printed
 	 */
-	private def sendError(message: String, lineNumber: Int): Unit = {
+	private[my] def sendError(message: String, lineNumber: Int): Unit = {
 		System.err.println(f"line ${lineNumber}: $message")
 		throw new Exception
 	}
@@ -147,7 +265,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	/**
 	 * Sends "Unexpected token '...'" message with current lexeme
 	 */
-	private def sendUnexpectedTokenError(): Unit = {
+	private[my] def sendUnexpectedTokenError(): Unit = {
 		sendError(f"Unexpected token ${lexeme.get.value}", lexeme.get.lineNumber)
 	}
 
@@ -156,7 +274,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * @param token wrong lexeme found
 	 * @param lineNumber position
 	 */
-	private def sendUnexpectedTokenError(token: String, lineNumber: Int): Unit = {
+	private[my] def sendUnexpectedTokenError(token: String, lineNumber: Int): Unit = {
 		sendError(f"Unexpected token $token", lineNumber)
 	}
 
@@ -164,14 +282,14 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Sends "'...' expected, but '...' found" message
 	 * @param expected what was expected
 	 */
-	private def sendExpectedFoundError(expected: String): Unit = {
+	private[my] def sendExpectedFoundError(expected: String): Unit = {
 		sendError(f"$expected expected, but ${lexeme.get.value} found", lexeme.get.lineNumber)
 	}
 
 	/**
 	 * Takes next lexeme from lexeme table when it has to exist
 	 */
-	private def nextLexemeCheckEmpty(): Unit = {
+	private[my] def nextLexemeCheckEmpty(): Unit = {
 		val lineNumber = lexeme.get.lineNumber
 		lexeme = lexemeTable.next()
 		if (lexeme.isEmpty) {
@@ -183,7 +301,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Should be called when current lexeme is ':' after Name
 	 * @return variable type according to lexeme
 	 */
-	private def getVarType(): VarType.Value = {
+	private[my] def getVarType(): VarType.Value = {
 		nextLexemeCheckEmpty()
 		if (lexeme.get.lexemeType != LexemeType.Type) {
 			val lineNumber = lexeme.get.lineNumber
@@ -197,7 +315,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * @param lexeme lexeme to be checked
 	 * @return true/false
 	 */
-	private def isValue(lexeme: Lexeme): Boolean = {
+	private[my] def isValue(lexeme: Lexeme): Boolean = {
 		lexeme.lexemeType match {
 			case BoolVal => true
 			case DoubleNumber => true
@@ -213,7 +331,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Should be called if current lexeme is a Name
 	 * @return pair (variable name, its value) to be added to variables table
 	 */
-	private def getVariable(): (String, Value) = {
+	private[my] def getVariable(): (String, Value) = {
 		val varName = lexeme.get.value
 		var varType: Option[VarType.Value] = None
 		var varValue: Option[String] = None
@@ -283,7 +401,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Called when 'def' key word found<br>
 	 * Saves functions names with its idx in lexemeTable in function table to call it if needed
 	 */
-	private def parseFunction(): Unit = {
+	private[my] def parseFunction(): Unit = {
 		checkNextLexemeType(Name, "Function name")
 		val name = lexeme.get.value
 		val checkIfExists = functionTable.get(name)
@@ -301,7 +419,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * @param expected expected type
 	 * @param expectedErrorMessage what was expected (to be printed in expected-found error)
 	 */
-	private def checkNextLexemeType(expected: LexemeType.Value, expectedErrorMessage: String): Unit = {
+	private[my] def checkNextLexemeType(expected: LexemeType.Value, expectedErrorMessage: String): Unit = {
 		nextLexemeCheckEmpty()
 		if (lexeme.get.lexemeType != expected) {
 			sendExpectedFoundError(expectedErrorMessage)
@@ -312,7 +430,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Gets next lexeme and check if we got token that was expected
 	 * @param expected expected token
 	 */
-	private def checkNextLexemeValue(expected: String): Unit = {
+	private[my] def checkNextLexemeValue(expected: String): Unit = {
 		nextLexemeCheckEmpty()
 		if (lexeme.get.value != expected) {
 			sendExpectedFoundError(f"'$expected'")
@@ -323,7 +441,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Skips lexemes until function ends (def name(...): Type {...})<br>
 	 * Should be called when lexeme is a function name
  	 */
-	private def skipFunction(): Unit = {
+	private[my] def skipFunction(): Unit = {
 		def functionParameters(): Unit = {
 			while (lexeme.get.lexemeType == Name) {
 				checkNextLexemeType(Colon, "Type")

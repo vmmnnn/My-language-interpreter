@@ -398,4 +398,61 @@ class LexemesParserSuite extends FunSuite {
 		lexemesParser.parse()
 		intercept[Exception] { lexemesParser.run("f") }
 	}
+
+	test("compute: 3-2+5;") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("3", LexemeType.IntNumber, 1))
+			.add(new Lexeme("-", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("5", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		val res = lexemesParser.compute()
+
+		val expected = new Value(VarType.Int, Option("6"))
+
+		assert(res.isSame(expected))
+	}
+
+	test("compute: 3-2+5*4;") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("3", LexemeType.IntNumber, 1))
+			.add(new Lexeme("-", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("5", LexemeType.IntNumber, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("4", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		val res = lexemesParser.compute()
+
+		val expected = new Value(VarType.Int, Option("21"))
+
+		assert(res.isSame(expected))
+	}
+
+	test("compute: 50-(2+5)*4;") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("50", LexemeType.IntNumber, 1))
+			.add(new Lexeme("-", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("5", LexemeType.IntNumber, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("4", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		val res = lexemesParser.compute()
+
+		val expected = new Value(VarType.Int, Option("22"))
+
+		assert(res.isSame(expected))
+	}
 }
