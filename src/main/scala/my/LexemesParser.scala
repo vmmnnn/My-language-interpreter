@@ -138,19 +138,19 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		checkNextLexemeValue("(")
 		nextLexemeCheckEmpty()
 		val printValue = compute()
+		print(printValue.value.get)
+		if (newLine) print("\n")
 	}
 
 	/**
-	 * Computes arithmetic or boolean expression that starts from current lexeme<br>
-	 * Works with Reverse Polish notation
-	 * @return Value: expression type and its result in a string format
+	 * Creates a structure which stores an expression in a Reverse Polish notation
+	 * @return RPN structure
 	 */
-	private[my] def compute(): Value = {
+	private[my] def createRPN(): List[Lexeme] = {
 		// to add brackets and operations as RPN suggests
 		var stackOp: List[Lexeme] =
 			List(new Lexeme("(", LexemeType.Brackets, lexeme.get.lineNumber))
 		var RPN: List[Lexeme] = List.empty
-		var stackCompute: List[Lexeme] = List.empty
 
 		def moveToRPN(): Unit = {
 			var stackOpHead = stackOp.head
@@ -196,27 +196,36 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			nextLexemeCheckEmpty()
 		}
 
-		def createRPN(): Unit = {
-			val expressionLineNumber = lexeme.get.lineNumber
-			while (lexeme.get.lexemeType != Semicolon) {
-				lexeme.get.lexemeType match {
-					case IntNumber | DoubleNumber | BoolVal => addToRPN()
-					case Name if (globalVars.getVal(lexeme.get.value).isDefined) => addToRPN()
-					case Brackets if (lexeme.get.value == "(") => addToStackOp()
-					case Brackets if (lexeme.get.value == ")") => moveToRPN()
-					case BoolOp | ArithmeticOp => processOp()
-				}
-			}
-			var stackOpHead = stackOp.head
-			while (stackOpHead.value != "(") {
-				RPN = RPN :+ stackOpHead
-				stackOp = stackOp.tail
-				stackOpHead = stackOp.head
-			}
-			if (stackOp.length != 1) {
-				sendError("Expression cannot be computed: parenthesis is not closed", expressionLineNumber)
+		val expressionLineNumber = lexeme.get.lineNumber
+		while (lexeme.get.lexemeType != Semicolon) {
+			lexeme.get.lexemeType match {
+				case IntNumber | DoubleNumber | BoolVal => addToRPN()
+				case Name if (globalVars.getVal(lexeme.get.value).isDefined) => addToRPN()
+				case Brackets if (lexeme.get.value == "(") => addToStackOp()
+				case Brackets if (lexeme.get.value == ")") => moveToRPN()
+				case BoolOp | ArithmeticOp => processOp()
 			}
 		}
+		var stackOpHead = stackOp.head
+		while (stackOpHead.value != "(") {
+			RPN = RPN :+ stackOpHead
+			stackOp = stackOp.tail
+			stackOpHead = stackOp.head
+		}
+		if (stackOp.length != 1) {
+			sendError("Expression cannot be computed: parenthesis is not closed", expressionLineNumber)
+		}
+		RPN
+	}
+
+	/**
+	 * Computes arithmetic or boolean expression that starts from current lexeme<br>
+	 * Works with Reverse Polish notation
+	 * @return Value: expression type and its result in a string format
+	 */
+	private[my] def compute(): Value = {
+		var RPN: List[Lexeme] = List.empty
+		var stackCompute: List[Lexeme] = List.empty
 
 		def getOperand(): Lexeme = {
 			val res = stackCompute.head
@@ -314,11 +323,16 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 
 		def applyEq(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
-			if (n1.lexemeType == n2.lexemeType |
-				n1.lexemeType == IntNumber & n2.lexemeType == DoubleNumber |
-				n1.lexemeType == DoubleNumber & n2.lexemeType == IntNumber
-			) {
+			val type1 = n1.lexemeType
+			val type2 = n2.lexemeType
+			if (type1 == type2) {
 				if (n1.value == n2.value) {
+					new Lexeme("True", BoolVal, lineNumber)
+				} else {
+					new Lexeme("False", BoolVal, lineNumber)
+				}
+			} else if (type1 == IntNumber & type2 == DoubleNumber | type1 == DoubleNumber & type2 == IntNumber) {
+				if (n1.value.toDouble == n2.value.toDouble) {
 					new Lexeme("True", BoolVal, lineNumber)
 				} else {
 					new Lexeme("False", BoolVal, lineNumber)
@@ -390,34 +404,34 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			}
 		}
 
-		def evaluate(): Value = {
-			while (RPN.length != 0) {
-				val head = RPN.head
-				RPN = RPN.tail
-				if (Set(IntNumber, DoubleNumber, BoolVal).contains(head.lexemeType)) {
-					stackCompute = head :: stackCompute
-				} else if (head.lexemeType == ArithmeticOp) {
-					val res = applyArithmeticOp(head)
-					stackCompute = res :: stackCompute
-				} else if (head.lexemeType == BoolOp) {
-					val res = applyBoolOp(head)
-					stackCompute = res :: stackCompute
-				}
-			}
-			if (stackCompute.length != 1) {
-				sendError("Error occurred during computation", stackCompute.head.lineNumber)
-			}
-			val result = stackCompute.head
-			result.lexemeType match {
-				case IntNumber => new Value(VarType.Int, Option(result.value))
-				case DoubleNumber => new Value(VarType.Double, Option(result.value))
-				case BoolVal => new Value(VarType.Bool, Option(result.value))
-				case LexemeType.String => new Value(VarType.String, Option(result.value))
+		RPN = createRPN()
+
+		// evaluate
+		while (RPN.length != 0) {
+			val head = RPN.head
+			RPN = RPN.tail
+			if (Set(IntNumber, DoubleNumber, BoolVal).contains(head.lexemeType)) {
+				stackCompute = head :: stackCompute
+			} else if (head.lexemeType == ArithmeticOp) {
+				val res = applyArithmeticOp(head)
+				stackCompute = res :: stackCompute
+			} else if (head.lexemeType == BoolOp) {
+				val res = applyBoolOp(head)
+				stackCompute = res :: stackCompute
 			}
 		}
 
-		createRPN()
-		evaluate()
+		if (stackCompute.length != 1) {
+			sendError("Error occurred during computation", stackCompute.head.lineNumber)
+		}
+
+		val result = stackCompute.head
+		result.lexemeType match {
+			case IntNumber => new Value(VarType.Int, Option(result.value))
+			case DoubleNumber => new Value(VarType.Double, Option(result.value))
+			case BoolVal => new Value(VarType.Bool, Option(result.value))
+			case LexemeType.String => new Value(VarType.String, Option(result.value))
+		}
 	}
 
 

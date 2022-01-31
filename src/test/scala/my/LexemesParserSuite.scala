@@ -455,4 +455,38 @@ class LexemesParserSuite extends FunSuite {
 
 		assert(res.isSame(expected))
 	}
+
+	test("compute: 10 % (1+2*(1+1)*1) == 2*2-4;") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("10", LexemeType.IntNumber, 1))
+			.add(new Lexeme("%", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("1", LexemeType.IntNumber, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("(", LexemeType.Brackets, 1))
+			.add(new Lexeme("1", LexemeType.IntNumber, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("1", LexemeType.IntNumber, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("1", LexemeType.IntNumber, 1))
+			.add(new Lexeme(")", LexemeType.Brackets, 1))
+			.add(new Lexeme("==", LexemeType.BoolOp, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme("-", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("4", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		val res = lexemesParser.compute()
+
+		val expected = new Value(VarType.Bool, Option("True"))
+
+		assert(res.isSame(expected))
+	}
+
 }
