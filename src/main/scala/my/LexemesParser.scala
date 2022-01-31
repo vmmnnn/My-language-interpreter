@@ -218,8 +218,202 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			}
 		}
 
+		def getOperand(): Lexeme = {
+			val res = stackCompute.head
+			stackCompute = stackCompute.tail
+			res
+		}
+
+		def getArithmeticOperand(operation: Lexeme): Lexeme = {
+			val res = getOperand()
+			if (!Set(IntNumber, DoubleNumber).contains(res.lexemeType)) {
+				sendError(f"Operation ${operation.value} cannot be performed for non-number operand ${res.value}", operation.lineNumber)
+			}
+			res
+		}
+
+		def getBoolOperand(operation: Lexeme): Lexeme = {
+			val res = getOperand()
+			if (res.lexemeType != BoolVal) {
+				sendError(f"Bool operation ${operation.value} cannot be performed for non-bool operand ${res.value}", operation.lineNumber)
+			}
+			res
+		}
+
+		def applyPlus(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			val res = n2.value.toDouble + n1.value.toDouble
+			if (n1.lexemeType == IntNumber & n2.lexemeType == IntNumber) {
+				new Lexeme(res.toInt.toString, IntNumber, lineNumber)
+			} else {
+				new Lexeme(res.toString, DoubleNumber, lineNumber)
+			}
+		}
+
+		def applyMinus(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			val res = n2.value.toDouble - n1.value.toDouble
+			if (n1.lexemeType == IntNumber & n2.lexemeType == IntNumber) {
+				new Lexeme(res.toInt.toString, IntNumber, lineNumber)
+			} else {
+				new Lexeme(res.toString, DoubleNumber, lineNumber)
+			}
+		}
+
+		def applyMultiply(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			val res = n2.value.toDouble * n1.value.toDouble
+			if (n1.lexemeType == IntNumber & n2.lexemeType == IntNumber) {
+				new Lexeme(res.toInt.toString, IntNumber, lineNumber)
+			} else {
+				new Lexeme(res.toString, DoubleNumber, lineNumber)
+			}
+		}
+
+		def applyDivision(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			val res = (n2.value.toDouble / n1.value.toDouble).toString
+			new Lexeme(res, DoubleNumber, lineNumber)
+		}
+
+		def applyMod(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			val res = (n2.value.toDouble % n1.value.toDouble).toString
+			new Lexeme(res, DoubleNumber, lineNumber)
+		}
+
+		def applyArithmeticOp(operation: Lexeme): Lexeme = {
+			val n1 = getArithmeticOperand(operation)
+			val n2 = getArithmeticOperand(operation)
+			operation.value match {
+				case "+" => applyPlus(n1, n2, operation.lineNumber)
+				case "-" => applyMinus(n1, n2, operation.lineNumber)
+				case "*" => applyMultiply(n1, n2, operation.lineNumber)
+				case "/" => applyDivision(n1, n2, operation.lineNumber)
+				case "%" => applyMod(n1, n2, operation.lineNumber)
+			}
+		}
+
+		def applyAnd(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n1.value == "False" | n2.value == "False") {
+				new Lexeme("False", BoolVal, lineNumber)
+			} else {
+				new Lexeme("True", BoolVal, lineNumber)
+			}
+		}
+
+		def applyOr(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n1.value == "True" | n2.value == "True") {
+				new Lexeme("True", BoolVal, lineNumber)
+			} else {
+				new Lexeme("False", BoolVal, lineNumber)
+			}
+		}
+
+		def applyNot(n1: Lexeme, lineNumber: Int): Lexeme = {
+			if (n1.value == "True") {
+				new Lexeme("False", BoolVal, lineNumber)
+			} else {
+				new Lexeme("True", BoolVal, lineNumber)
+			}
+		}
+
+		def applyEq(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n1.lexemeType == n2.lexemeType |
+				n1.lexemeType == IntNumber & n2.lexemeType == DoubleNumber |
+				n1.lexemeType == DoubleNumber & n2.lexemeType == IntNumber
+			) {
+				if (n1.value == n2.value) {
+					new Lexeme("True", BoolVal, lineNumber)
+				} else {
+					new Lexeme("False", BoolVal, lineNumber)
+				}
+			} else {
+				new Lexeme("False", BoolVal, lineNumber)
+			}
+		}
+
+		def applyNEq(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n1.lexemeType == n2.lexemeType |
+				n1.lexemeType == IntNumber & n2.lexemeType == DoubleNumber |
+				n1.lexemeType == DoubleNumber & n2.lexemeType == IntNumber
+			) {
+				if (n1.value == n2.value) {
+					new Lexeme("False", BoolVal, lineNumber)
+				} else {
+					new Lexeme("True", BoolVal, lineNumber)
+				}
+			} else {
+				new Lexeme("True", BoolVal, lineNumber)
+			}
+		}
+
+		def applyG(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n2.value.toDouble > n1.value.toDouble) {
+				new Lexeme("True", BoolVal, lineNumber)
+			} else {
+				new Lexeme("False", BoolVal, lineNumber)
+			}
+		}
+
+		def applyGEq(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n2.value.toDouble >= n1.value.toDouble) {
+				new Lexeme("True", BoolVal, lineNumber)
+			} else {
+				new Lexeme("False", BoolVal, lineNumber)
+			}
+		}
+
+		def applyL(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n2.value.toDouble < n1.value.toDouble) {
+				new Lexeme("True", BoolVal, lineNumber)
+			} else {
+				new Lexeme("False", BoolVal, lineNumber)
+			}
+		}
+
+		def applyLEq(n1: Lexeme, n2: Lexeme, lineNumber: Int): Lexeme = {
+			if (n2.value.toDouble <= n1.value.toDouble) {
+				new Lexeme("True", BoolVal, lineNumber)
+			} else {
+				new Lexeme("False", BoolVal, lineNumber)
+			}
+		}
+
+		def applyBoolOp(operation: Lexeme): Lexeme = {
+			val lineNumber = operation.lineNumber
+			operation.value match {
+				case "and" => applyAnd(getBoolOperand(operation), getBoolOperand(operation), lineNumber)
+				case "or" => applyOr(getBoolOperand(operation), getBoolOperand(operation), lineNumber)
+				case "not" => applyNot(getBoolOperand(operation), lineNumber)
+				case "==" => applyEq(getOperand(), getOperand(), lineNumber)
+				case "!=" => applyNEq(getOperand(), getOperand(), lineNumber)
+				case ">" => applyG(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
+				case ">=" => applyGEq(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
+				case "<" => applyL(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
+				case "<=" => applyLEq(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
+			}
+		}
+
 		def evaluate(): Value = {
-			new Value(VarType.Int, Option("24"))  // TODO write the function
+			while (RPN.length != 0) {
+				val head = RPN.head
+				RPN = RPN.tail
+				if (Set(IntNumber, DoubleNumber, BoolVal).contains(head.lexemeType)) {
+					stackCompute = head :: stackCompute
+				} else if (head.lexemeType == ArithmeticOp) {
+					val res = applyArithmeticOp(head)
+					stackCompute = res :: stackCompute
+				} else if (head.lexemeType == BoolOp) {
+					val res = applyBoolOp(head)
+					stackCompute = res :: stackCompute
+				}
+			}
+			if (stackCompute.length != 1) {
+				sendError("Error occurred during computation", stackCompute.head.lineNumber)
+			}
+			val result = stackCompute.head
+			result.lexemeType match {
+				case IntNumber => new Value(VarType.Int, Option(result.value))
+				case DoubleNumber => new Value(VarType.Double, Option(result.value))
+				case BoolVal => new Value(VarType.Bool, Option(result.value))
+				case LexemeType.String => new Value(VarType.String, Option(result.value))
+			}
 		}
 
 		createRPN()
