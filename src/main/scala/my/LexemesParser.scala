@@ -140,14 +140,6 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		val printValue = compute()
 	}
 
-	/*
-			var bracketsStack: List[String] = List.empty
-			bracketsStack = "{" :: bracketsStack
-
-			val stackTop = bracketsStack.head
-			bracketsStack = bracketsStack.tail
-	 */
-
 	/**
 	 * Computes arithmetic or boolean expression that starts from current lexeme<br>
 	 * Works with Reverse Polish notation
