@@ -143,7 +143,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		val name = lexeme.get.value
 		nextLexemeCheckEmpty()
 		if (lexeme.get.value == "(") {   // function call
-
+			// TODO: function calls
 		} else if (lexeme.get.lexemeType == DefineOp) { // variable
 			nextLexemeCheckEmpty()
 			val expressionResult = compute()
@@ -656,7 +656,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 
 		// '=' => look for a value
-		if (lexeme.get.lexemeType == LexemeType.DefineOp) {   // TODO: value is a boolean or arithmetic expression
+		if (lexeme.get.lexemeType == LexemeType.DefineOp) {
 			nextLexemeCheckEmpty()
 			val value = compute()
 			varValue = value.value
