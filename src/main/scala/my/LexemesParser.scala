@@ -180,7 +180,6 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		nextLexemeCheckEmpty()
 		val lineNumber = lexeme.get.lineNumber
 		val ifExpressionResult = compute()
-		println(ifExpressionResult)
 		if (ifExpressionResult.varType != VarType.Bool) {
 			sendError("Expression in if statement must be Bool", lineNumber)
 		}
@@ -194,8 +193,15 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		} else {
 			bracketsBalance()
 			nextLexemeCheckEmpty()
+
+			if (lexeme.get.value == "else") {
+				checkNextLexemeValue("{")
+				nextLexemeCheckEmpty()
+				while (lexeme.get.value != "}") {
+					runBlock(vars)
+				}
+			}
 		}
-		// TODO: add else branch
 	}
 
 	/**
