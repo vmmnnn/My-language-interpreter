@@ -131,6 +131,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			case "print" => runPrint(false, vars)
 			case "println" => runPrint(true, vars)
 			case "if" => runIf(vars)
+			case "while" => runWhile(vars)
 			case _ if lexeme.get.lexemeType == Name => runName(vars)
 		}
 	}
@@ -202,6 +203,42 @@ class LexemesParser(lexemeTable: LexemeTable) {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Runs while-structure
+	 */
+	private[my] def runWhile(vars: VarTable): Unit = {
+		checkNextLexemeValue("(")
+		val whileExpressionLexemeIdx = lexemeTable.getLexemeIdx
+
+		bracketsBalance()
+		checkNextLexemeValue("{")
+		val whileBlockLexemeIdx = lexemeTable.getLexemeIdx
+
+		lexemeTable.setLexemeIdx(whileExpressionLexemeIdx)
+		lexeme = lexemeTable.next()
+		var whileExpressionResult = compute(vars)
+		val lineNumber = lexeme.get.lineNumber
+		if (whileExpressionResult.varType != VarType.Bool) {
+			sendError("Expression in while statement must be Bool", lineNumber)
+		}
+
+		while (whileExpressionResult.value.get == "True") {
+			lexemeTable.setLexemeIdx(whileBlockLexemeIdx)
+			lexeme = lexemeTable.next()
+			while (lexeme.get.value != "}") {
+				runBlock(vars)
+			}
+			lexemeTable.setLexemeIdx(whileExpressionLexemeIdx)
+			lexeme = lexemeTable.next()
+			whileExpressionResult = compute(vars)
+		}
+
+		lexemeTable.setLexemeIdx(whileBlockLexemeIdx - 1)  // '{' for a while-block
+		lexeme = lexemeTable.next()
+		bracketsBalance()
+		nextLexemeCheckEmpty()
 	}
 
 	/**
@@ -529,7 +566,6 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 	}
 
-
 	/**
 	 * Check if main function has no parameters and returns None<br>
 	 * Should be called when current lexeme is
@@ -730,7 +766,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		var bracketsStack: List[String] = List.empty
 		val openBrackets = Array("(", "{", "[")
 		val closeBrackets = Array(")", "}", "]")
-		bracketsStack = "{" :: bracketsStack
+		bracketsStack = lexeme.get.value :: bracketsStack
 
 		while (!bracketsStack.isEmpty) {
 			nextLexemeCheckEmpty()

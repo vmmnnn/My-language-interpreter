@@ -446,6 +446,21 @@ class LexemesParserSuite extends FunSuite {
 		assert(res.isSame(expected))
 	}
 
+	test("compute: 1 > 2;") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("1", LexemeType.IntNumber, 1))
+			.add(new Lexeme(">", LexemeType.BoolOp, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		val res = lexemesParser.compute(new VarTable)
+
+		val expected = new Value(VarType.Bool, Option("False"))
+
+		assert(res.isSame(expected))
+	}
+
 	test("compute: 3-2+5*4;") {
 		val lexemeTable: LexemeTable = new LexemeTable()
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
@@ -586,6 +601,28 @@ class LexemesParserSuite extends FunSuite {
 
 		val expected: VarTable = new VarTable
 		val expectedVar1: Value = new Value(VarType.Int, Option("2"))
+		expected.setVal("x", expectedVar1)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("change global var in while") {
+		val program = "x = 0;\n" +
+									"def main(): None {\n" +
+										"i = 5;\n" +
+										"while (i > x;) {x = x + 1;}\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar1: Value = new Value(VarType.Int, Option("5"))
 		expected.setVal("x", expectedVar1)
 
 		assert(sameVarTables(expected, globalVars))
