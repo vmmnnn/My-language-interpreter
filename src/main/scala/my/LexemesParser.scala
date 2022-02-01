@@ -127,6 +127,32 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		lexeme.get.value match {
 			case "print" => runPrint(false)
 			case "println" => runPrint(true)
+			case "if" => runIf()
+		}
+	}
+
+	/**
+	 * Runs if-structure
+	 */
+	private[my] def runIf(): Unit = {
+		checkNextLexemeValue("(")
+		nextLexemeCheckEmpty()
+		val lineNumber = lexeme.get.lineNumber
+		val ifExpressionResult = compute()
+		println(ifExpressionResult)
+		if (ifExpressionResult.varType != VarType.Bool) {
+			sendError("Expression in if statement must be Bool", lineNumber)
+		}
+		checkNextLexemeValue(")")
+		checkNextLexemeValue("{")
+		if (ifExpressionResult.value.get == "True") {
+			nextLexemeCheckEmpty()
+			while (lexeme.get.value != "}") {
+				runBlock()
+			}
+		} else {
+			bracketsBalance()
+			nextLexemeCheckEmpty()
 		}
 	}
 
@@ -140,6 +166,9 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		val printValue = compute()
 		print(printValue.value.get)
 		if (newLine) print("\n")
+
+		checkNextLexemeValue(")")
+		nextLexemeCheckEmpty()
 	}
 
 	/**
@@ -197,7 +226,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 
 		val expressionLineNumber = lexeme.get.lineNumber
-		while (lexeme.get.lexemeType != Semicolon) {
+		while (lexeme.get.lexemeType != Semicolon & stackOp.length >= 1) {
 			lexeme.get.lexemeType match {
 				case IntNumber | DoubleNumber | BoolVal => addToRPN()
 				case Name if (globalVars.getVal(lexeme.get.value).isDefined) => addToRPN()
@@ -421,6 +450,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			}
 		}
 
+		// get result
 		if (stackCompute.length != 1) {
 			sendError("Error occurred during computation", stackCompute.head.lineNumber)
 		}
@@ -638,6 +668,39 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	}
 
 	/**
+	 * Skips block and checks if brackets are balanced
+	 */
+	private[my] def bracketsBalance(): Unit = {
+		def isPairedBrackets(open: String, close: String): Boolean = {
+			open match {
+				case "(" if close == ")" => true
+				case "{" if close == "}" => true
+				case "[" if close == "]" => true
+				case _ => false
+			}
+		}
+
+		var bracketsStack: List[String] = List.empty
+		val openBrackets = Array("(", "{", "[")
+		val closeBrackets = Array(")", "}", "]")
+		bracketsStack = "{" :: bracketsStack
+
+		while (!bracketsStack.isEmpty) {
+			nextLexemeCheckEmpty()
+			val value = lexeme.get.value
+			if (openBrackets.contains(value)) {
+				bracketsStack = value :: bracketsStack
+			} else if (closeBrackets.contains(value)) {
+				val stackTop = bracketsStack.head
+				if (!isPairedBrackets(stackTop, value)) {
+					sendError("Mismatched parentheses", lexeme.get.lineNumber)
+				}
+				bracketsStack = bracketsStack.tail
+			}
+		}
+	}
+
+	/**
 	 * Skips lexemes until function ends (def name(...): Type {...})<br>
 	 * Should be called when lexeme is a function name
  	 */
@@ -671,36 +734,6 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			checkNextLexemeType(Colon, "Function type")
 			checkNextLexemeType(Type, "Function type")
 			checkNextLexemeValue("{")
-		}
-
-		def isPairedBrackets(open: String, close: String): Boolean = {
-			open match {
-				case "(" if close == ")" => true
-				case "{" if close == "}" => true
-				case "[" if close == "]" => true
-				case _ => false
-			}
-		}
-
-		def bracketsBalance(): Unit = {
-			var bracketsStack: List[String] = List.empty
-			val openBrackets = Array("(", "{", "[")
-			val closeBrackets = Array(")", "}", "]")
-			bracketsStack = "{" :: bracketsStack
-
-			while (!bracketsStack.isEmpty) {
-				nextLexemeCheckEmpty()
-				val value = lexeme.get.value
-				if (openBrackets.contains(value)) {
-					bracketsStack = value :: bracketsStack
-				} else if (closeBrackets.contains(value)) {
-					val stackTop = bracketsStack.head
-					if (!isPairedBrackets(stackTop, value)) {
-						sendError("Mismatched parentheses", lexeme.get.lineNumber)
-					}
-					bracketsStack = bracketsStack.tail
-				}
-			}
 		}
 
 		header()

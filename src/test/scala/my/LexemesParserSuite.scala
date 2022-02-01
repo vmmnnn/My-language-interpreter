@@ -488,5 +488,5 @@ class LexemesParserSuite extends FunSuite {
 
 		assert(res.isSame(expected))
 	}
-
+	
 }
