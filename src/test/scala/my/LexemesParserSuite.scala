@@ -30,11 +30,12 @@ class LexemesParserSuite extends FunSuite {
 		true
 	}
 
-	test("idx = 3") {
+	test("idx = 3;") {
 		val lexemeTable: LexemeTable = new LexemeTable()
 			.add(new Lexeme("idx", LexemeType.Name, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
 		lexemesParser.parse()
@@ -48,13 +49,16 @@ class LexemesParserSuite extends FunSuite {
 		assert(sameVarTables(expected, globalVars))
 	}
 
-	test("x: Double = 3") {
+	test("idx = 7*3+1;") {
 		val lexemeTable: LexemeTable = new LexemeTable()
-			.add(new Lexeme("x", LexemeType.Name, 1))
-			.add(new Lexeme(":", LexemeType.Colon, 1))
-			.add(new Lexeme("Double", LexemeType.Type, 1))
+			.add(new Lexeme("idx", LexemeType.Name, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme("7", LexemeType.IntNumber, 1))
+			.add(new Lexeme("*", LexemeType.ArithmeticOp, 1))
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
+			.add(new Lexeme("+", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("1", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
 		lexemesParser.parse()
@@ -62,19 +66,43 @@ class LexemesParserSuite extends FunSuite {
 		val globalVars = lexemesParser.getGlobalVars
 
 		val expected: VarTable = new VarTable
-		val expectedVar: Value = new Value(VarType.Double, Option("3"))
+		val expectedVar: Value = new Value(VarType.Int, Option("22"))
+		expected.setVal("idx", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("x: Double = 3/2;") {
+		val lexemeTable: LexemeTable = new LexemeTable()
+			.add(new Lexeme("x", LexemeType.Name, 1))
+			.add(new Lexeme(":", LexemeType.Colon, 1))
+			.add(new Lexeme("Double", LexemeType.Type, 1))
+			.add(new Lexeme("=", LexemeType.DefineOp, 1))
+			.add(new Lexeme("3", LexemeType.IntNumber, 1))
+			.add(new Lexeme("/", LexemeType.ArithmeticOp, 1))
+			.add(new Lexeme("2", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
+
+		val lexemesParser = new LexemesParser(lexemeTable)
+		lexemesParser.parse()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Double, Option("1.5"))
 		expected.setVal("x", expectedVar)
 
 		assert(sameVarTables(expected, globalVars))
 	}
 
-	test("idx: Bool = 3") {
+	test("idx: Bool = 3;") {
 		val lexemeTable: LexemeTable = new LexemeTable()
 			.add(new Lexeme("idx", LexemeType.Name, 1))
 			.add(new Lexeme(":", LexemeType.Colon, 1))
 			.add(new Lexeme("Bool", LexemeType.Type, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 			.add(new Lexeme("3", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
 		intercept[Exception] { lexemesParser.parse() }
@@ -134,16 +162,18 @@ class LexemesParserSuite extends FunSuite {
 		intercept[Exception] { lexemesParser.parse() }
 	}
 
-	test("x = 25; fl: Bool = True") {
+	test("x = 25; fl: Bool = True;") {
 		val lexemeTable: LexemeTable = new LexemeTable()
 			.add(new Lexeme("x", LexemeType.Name, 1))
 			.add(new Lexeme("=", LexemeType.DefineOp, 1))
 			.add(new Lexeme("25", LexemeType.IntNumber, 1))
+			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 			.add(new Lexeme("fl", LexemeType.Name, 2))
 			.add(new Lexeme(":", LexemeType.Colon, 2))
 			.add(new Lexeme("Bool", LexemeType.Type, 2))
 			.add(new Lexeme("=", LexemeType.DefineOp, 2))
 			.add(new Lexeme("True", LexemeType.BoolVal, 2))
+			.add(new Lexeme(";", LexemeType.Semicolon, 2))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
 		lexemesParser.parse()
@@ -182,12 +212,12 @@ class LexemesParserSuite extends FunSuite {
 
 	test("2 functions with parameters") {
 		val program = "def func1(p1: Int, p2: Double): Bool {\n" +
-			"x = (2+2)/2\n" +
-			"if (func2(p1) == 1) {return False}\n" +
-			"return True\n" +
+			"x = (2+2)/2;\n" +
+			"if (func2(p1) == 1;) {return False;}\n" +
+			"return True;\n" +
 			"}\n" +
-			"p = 0\n" +
-			"def func2(p3: Int): Double {return (p+p3)/p3}\n"
+			"p = 0;\n" +
+			"def func2(p3: Int): Double {return (p+p3)/p3;}\n"
 		val lexicalAnalyzer = new LexicalAnalyzer
 		lexicalAnalyzer.run(program)
 
@@ -201,7 +231,7 @@ class LexemesParserSuite extends FunSuite {
 		val expectedVar: Value = new Value(VarType.Int, Option("0"))
 		expectedGlobalVars.setVal("p", expectedVar)
 
-		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2, "func2" -> 44)
+		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2, "func2" -> 49)
 
 		assert(sameVarTables(expectedGlobalVars, globalVars))
 		assert(sameFunctionTables(expectedFunctionTable, functionTable))
@@ -209,13 +239,13 @@ class LexemesParserSuite extends FunSuite {
 
 	test("2 functions with parameters and main function") {
 		val program = "def func1(p1: Int, p2: Double): Bool {\n" +
-			"x = (2+2)/2\n" +
-			"if (func2(p1) == 1) {return False}\n" +
-			"return True\n" +
+			"x = (2+2)/2;\n" +
+			"if (func2(p1) == 1;) {return False;}\n" +
+			"return True;\n" +
 			"}\n" +
-			"def main(): None {print(func1(2, 3))}" +
-			"p = 0\n" +
-			"def func2(p3: Int): Double {return (p+p3)/p3}\n"
+			"def main(): None {print(func1(2, 3);)}" +
+			"p = 0;\n" +
+			"def func2(p3: Int): Double {return (p+p3)/p3;}\n"
 		val lexicalAnalyzer = new LexicalAnalyzer
 		lexicalAnalyzer.run(program)
 
@@ -229,7 +259,7 @@ class LexemesParserSuite extends FunSuite {
 		val expectedVar: Value = new Value(VarType.Int, Option("0"))
 		expectedGlobalVars.setVal("p", expectedVar)
 
-		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2, "func2" -> 61, "main" -> 41)
+		val expectedFunctionTable: Map[String, Int] = Map("func1" -> 2, "func2" -> 67, "main" -> 45)
 
 		assert(sameVarTables(expectedGlobalVars, globalVars))
 		assert(sameFunctionTables(expectedFunctionTable, functionTable))
@@ -488,5 +518,29 @@ class LexemesParserSuite extends FunSuite {
 
 		assert(res.isSame(expected))
 	}
-	
+
+	test("change global var") {
+		val program = "x = 3;\n" +
+			"y = False or True;\n" +
+			"def main(): None {\n" +
+			"x = 5;\n" +
+			"y = False and True;\n" +
+			"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar1: Value = new Value(VarType.Int, Option("5"))
+		val expectedVar2: Value = new Value(VarType.Bool, Option("False"))
+		expected.setVal("x", expectedVar1)
+		expected.setVal("y", expectedVar2)
+
+		assert(sameVarTables(expected, globalVars))
+	}
 }

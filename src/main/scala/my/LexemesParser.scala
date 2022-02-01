@@ -1,6 +1,6 @@
 package my
 
-import my.LexemeType.{ArithmeticOp, BoolOp, BoolVal, Brackets, Colon, Comma, DoubleNumber, IntNumber, Name, Semicolon, Type}
+import my.LexemeType.{ArithmeticOp, BoolOp, BoolVal, Brackets, Colon, Comma, DefineOp, DoubleNumber, IntNumber, Name, Semicolon, Type}
 
 import scala.collection.mutable.Map
 
@@ -106,6 +106,9 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * @param mainFunction function to be called, usually 'main'
 	 */
 	def run(mainFunction: String = "main"): Unit = {
+		// table with local variables
+		val vars = new VarTable
+
 		val mainFunctionLexemeIdx = functionTable.get(mainFunction)
 		if (mainFunctionLexemeIdx.isEmpty) {
 			sendError(f"No function with name $mainFunction is provided", lexemeTable.size)
@@ -115,7 +118,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		checkMainHeader()
 		nextLexemeCheckEmpty()
 		while (lexeme.get.value != "}") {
-			runBlock()
+			runBlock(vars)
 		}
 	}
 
@@ -123,18 +126,56 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Executes next command or command block (if, for etc)<br>
 	 * Should be called when current lexeme is the block beginning
 	 */
-	private[my] def runBlock(): Unit = {
+	private[my] def runBlock(vars: VarTable): Unit = {
 		lexeme.get.value match {
 			case "print" => runPrint(false)
 			case "println" => runPrint(true)
-			case "if" => runIf()
+			case "if" => runIf(vars)
+			case _ if lexeme.get.lexemeType == Name => runName(vars)
+		}
+	}
+
+	/**
+	 * Determines whether this is a variable or a function call
+	 * Should be called when current lexeme is the name
+	 */
+	private[my] def runName(vars: VarTable): Unit = {
+		val name = lexeme.get.value
+		nextLexemeCheckEmpty()
+		if (lexeme.get.value == "(") {   // function call
+
+		} else if (lexeme.get.lexemeType == DefineOp) { // variable
+			nextLexemeCheckEmpty()
+			val expressionResult = compute()
+			runDefineOp(name, expressionResult, vars)
+		} else {
+			sendUnexpectedTokenError()
+		}
+		nextLexemeCheckEmpty()
+	}
+
+	/**
+	 * Sets new value for a variable or creates a new variable
+	 * @param name variable name
+	 * @param value variable value to be set
+	 * @param vars local variables table
+	 */
+	private[my] def runDefineOp(name: String, value: Value, vars: VarTable): Unit = {
+		if (vars.getVal(name).isEmpty) {
+			if (globalVars.getVal(name).isEmpty) {
+				vars.setVal(name, value) // create new variable
+			} else {
+				globalVars.setVal(name, value) // change global variable
+			}
+		} else {
+			vars.setVal(name, value) // change local variable
 		}
 	}
 
 	/**
 	 * Runs if-structure
 	 */
-	private[my] def runIf(): Unit = {
+	private[my] def runIf(vars: VarTable): Unit = {
 		checkNextLexemeValue("(")
 		nextLexemeCheckEmpty()
 		val lineNumber = lexeme.get.lineNumber
@@ -148,12 +189,13 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		if (ifExpressionResult.value.get == "True") {
 			nextLexemeCheckEmpty()
 			while (lexeme.get.value != "}") {
-				runBlock()
+				runBlock(vars)
 			}
 		} else {
 			bracketsBalance()
 			nextLexemeCheckEmpty()
 		}
+		// TODO: add else branch
 	}
 
 	/**
@@ -567,8 +609,8 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		var varValue: Option[String] = None
 
 		def getValueCheckType(): Unit = {
-			varValue = Option(lexeme.get.value)
-			lexeme.get.lexemeType match {
+			//varValue = Option(lexeme.get.value)
+			varValue match {
 				case BoolVal if varType.get == VarType.Bool =>
 				case DoubleNumber if varType.get == VarType.Double =>
 				case IntNumber if varType.get == VarType.Int =>
@@ -579,10 +621,10 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		}
 
 		def getValueSetType(): Unit = {
-			if (!isValue(lexeme.get)) {
+			/*if (!isValue(lexeme.get)) {
 				sendUnexpectedTokenError()
 			}
-			varValue = Option(lexeme.get.value)
+			varValue = Option(lexeme.get.value)*/
 			varType = Option(lexeme.get.lexemeType match {
 				case BoolVal => VarType.Bool
 				case DoubleNumber => VarType.Double
@@ -616,10 +658,17 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		// '=' => look for a value
 		if (lexeme.get.lexemeType == LexemeType.DefineOp) {   // TODO: value is a boolean or arithmetic expression
 			nextLexemeCheckEmpty()
-			if (varType.isEmpty) {  // define type according to the value
-				getValueSetType()
-			} else {  // type of the value and the declared one must be the same
-				getValueCheckType()
+			val value = compute()
+			varValue = value.value
+
+			if (varType.isEmpty) {
+				varType = Option(value.varType)
+			} else {  // check is types are same
+				if (varType.get != value.varType) {
+					if (varType.get != VarType.Double | value.varType != VarType.Int) {
+						sendError("Types mismatch", lexeme.get.lineNumber)
+					}
+				}
 			}
 		}
 
