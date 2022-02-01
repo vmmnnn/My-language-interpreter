@@ -439,7 +439,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		val res = lexemesParser.compute()
+		val res = lexemesParser.compute(new VarTable)
 
 		val expected = new Value(VarType.Int, Option("6"))
 
@@ -458,7 +458,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		val res = lexemesParser.compute()
+		val res = lexemesParser.compute(new VarTable)
 
 		val expected = new Value(VarType.Int, Option("21"))
 
@@ -479,7 +479,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		val res = lexemesParser.compute()
+		val res = lexemesParser.compute(new VarTable)
 
 		val expected = new Value(VarType.Int, Option("22"))
 
@@ -512,7 +512,7 @@ class LexemesParserSuite extends FunSuite {
 			.add(new Lexeme(";", LexemeType.Semicolon, 1))
 
 		val lexemesParser = new LexemesParser(lexemeTable)
-		val res = lexemesParser.compute()
+		val res = lexemesParser.compute(new VarTable)
 
 		val expected = new Value(VarType.Bool, Option("True"))
 

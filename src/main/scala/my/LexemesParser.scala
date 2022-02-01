@@ -89,7 +89,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		// program starts either from global variables or right from functions
 		while (lexeme.isDefined) {
 			if (lexeme.get.lexemeType == LexemeType.Name) { // global variables
-				val (name, value) = getVariable()
+				val (name, value) = getVariable(globalVars)
 				globalVars.setVal(name, value)
 			} else if (lexeme.get.value == "def") { // function
 				parseFunction()
@@ -128,8 +128,8 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 */
 	private[my] def runBlock(vars: VarTable): Unit = {
 		lexeme.get.value match {
-			case "print" => runPrint(false)
-			case "println" => runPrint(true)
+			case "print" => runPrint(false, vars)
+			case "println" => runPrint(true, vars)
 			case "if" => runIf(vars)
 			case _ if lexeme.get.lexemeType == Name => runName(vars)
 		}
@@ -146,7 +146,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			// TODO: function calls
 		} else if (lexeme.get.lexemeType == DefineOp) { // variable
 			nextLexemeCheckEmpty()
-			val expressionResult = compute()
+			val expressionResult = compute(vars)
 			runDefineOp(name, expressionResult, vars)
 		} else {
 			sendUnexpectedTokenError()
@@ -179,7 +179,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		checkNextLexemeValue("(")
 		nextLexemeCheckEmpty()
 		val lineNumber = lexeme.get.lineNumber
-		val ifExpressionResult = compute()
+		val ifExpressionResult = compute(vars)
 		if (ifExpressionResult.varType != VarType.Bool) {
 			sendError("Expression in if statement must be Bool", lineNumber)
 		}
@@ -208,10 +208,10 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Runs model language function 'print' or 'println' with newLine is false or true respectively
 	 * @param newLine flag that shows if '\n' should be printed at the end
 	 */
-	private[my] def runPrint(newLine: Boolean): Unit = {
+	private[my] def runPrint(newLine: Boolean, vars: VarTable): Unit = {
 		checkNextLexemeValue("(")
 		nextLexemeCheckEmpty()
-		val printValue = compute()
+		val printValue = compute(vars)
 		print(printValue.value.get)
 		if (newLine) print("\n")
 
@@ -223,7 +223,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Creates a structure which stores an expression in a Reverse Polish notation
 	 * @return RPN structure
 	 */
-	private[my] def createRPN(): List[Lexeme] = {
+	private[my] def createRPN(vars: VarTable): List[Lexeme] = {
 		// to add brackets and operations as RPN suggests
 		var stackOp: List[Lexeme] =
 			List(new Lexeme("(", LexemeType.Brackets, lexeme.get.lineNumber))
@@ -277,6 +277,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		while (lexeme.get.lexemeType != Semicolon & stackOp.length >= 1) {
 			lexeme.get.lexemeType match {
 				case IntNumber | DoubleNumber | BoolVal => addToRPN()
+				case Name if (vars.getVal(lexeme.get.value).isDefined) => addToRPN()
 				case Name if (globalVars.getVal(lexeme.get.value).isDefined) => addToRPN()
 				case Brackets if (lexeme.get.value == "(") => addToStackOp()
 				case Brackets if (lexeme.get.value == ")") => moveToRPN()
@@ -300,26 +301,42 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Works with Reverse Polish notation
 	 * @return Value: expression type and its result in a string format
 	 */
-	private[my] def compute(): Value = {
+	private[my] def compute(vars: VarTable): Value = {
 		var RPN: List[Lexeme] = List.empty
 		var stackCompute: List[Lexeme] = List.empty
 
-		def getOperand(): Lexeme = {
-			val res = stackCompute.head
+		def getOperand(vars: VarTable): Lexeme = {
+			var res = stackCompute.head
 			stackCompute = stackCompute.tail
+			if (res.lexemeType == Name) {
+				var value = vars.getVal(res.value)
+				if (value.isEmpty) {
+					value = globalVars.getVal(res.value)
+					if (value.isEmpty) {
+						sendError(f"Variable $res is not defined", res.lineNumber)
+					}
+				}
+				val lexemeType = value.get.varType match {
+					case VarType.Int => LexemeType.IntNumber
+					case VarType.Double => LexemeType.DoubleNumber
+					case VarType.String => LexemeType.String
+					case VarType.Bool => LexemeType.BoolVal
+				}
+				res = new Lexeme(value.get.value.get, lexemeType, res.lineNumber)
+			}
 			res
 		}
 
-		def getArithmeticOperand(operation: Lexeme): Lexeme = {
-			val res = getOperand()
+		def getArithmeticOperand(operation: Lexeme, vars: VarTable): Lexeme = {
+			val res = getOperand(vars)
 			if (!Set(IntNumber, DoubleNumber).contains(res.lexemeType)) {
 				sendError(f"Operation ${operation.value} cannot be performed for non-number operand ${res.value}", operation.lineNumber)
 			}
 			res
 		}
 
-		def getBoolOperand(operation: Lexeme): Lexeme = {
-			val res = getOperand()
+		def getBoolOperand(operation: Lexeme, vars: VarTable): Lexeme = {
+			val res = getOperand(vars)
 			if (res.lexemeType != BoolVal) {
 				sendError(f"Bool operation ${operation.value} cannot be performed for non-bool operand ${res.value}", operation.lineNumber)
 			}
@@ -363,9 +380,9 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			new Lexeme(res, DoubleNumber, lineNumber)
 		}
 
-		def applyArithmeticOp(operation: Lexeme): Lexeme = {
-			val n1 = getArithmeticOperand(operation)
-			val n2 = getArithmeticOperand(operation)
+		def applyArithmeticOp(operation: Lexeme, vars: VarTable): Lexeme = {
+			val n1 = getArithmeticOperand(operation, vars)
+			val n2 = getArithmeticOperand(operation, vars)
 			operation.value match {
 				case "+" => applyPlus(n1, n2, operation.lineNumber)
 				case "-" => applyMinus(n1, n2, operation.lineNumber)
@@ -466,34 +483,34 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			}
 		}
 
-		def applyBoolOp(operation: Lexeme): Lexeme = {
+		def applyBoolOp(operation: Lexeme, vars: VarTable): Lexeme = {
 			val lineNumber = operation.lineNumber
 			operation.value match {
-				case "and" => applyAnd(getBoolOperand(operation), getBoolOperand(operation), lineNumber)
-				case "or" => applyOr(getBoolOperand(operation), getBoolOperand(operation), lineNumber)
-				case "not" => applyNot(getBoolOperand(operation), lineNumber)
-				case "==" => applyEq(getOperand(), getOperand(), lineNumber)
-				case "!=" => applyNEq(getOperand(), getOperand(), lineNumber)
-				case ">" => applyG(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
-				case ">=" => applyGEq(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
-				case "<" => applyL(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
-				case "<=" => applyLEq(getArithmeticOperand(operation), getArithmeticOperand(operation), lineNumber)
+				case "and" => applyAnd(getBoolOperand(operation, vars), getBoolOperand(operation, vars), lineNumber)
+				case "or" => applyOr(getBoolOperand(operation, vars), getBoolOperand(operation, vars), lineNumber)
+				case "not" => applyNot(getBoolOperand(operation, vars), lineNumber)
+				case "==" => applyEq(getOperand(vars), getOperand(vars), lineNumber)
+				case "!=" => applyNEq(getOperand(vars), getOperand(vars), lineNumber)
+				case ">" => applyG(getArithmeticOperand(operation, vars), getArithmeticOperand(operation, vars), lineNumber)
+				case ">=" => applyGEq(getArithmeticOperand(operation, vars), getArithmeticOperand(operation, vars), lineNumber)
+				case "<" => applyL(getArithmeticOperand(operation, vars), getArithmeticOperand(operation, vars), lineNumber)
+				case "<=" => applyLEq(getArithmeticOperand(operation, vars), getArithmeticOperand(operation, vars), lineNumber)
 			}
 		}
 
-		RPN = createRPN()
+		RPN = createRPN(vars)
 
 		// evaluate
 		while (RPN.length != 0) {
 			val head = RPN.head
 			RPN = RPN.tail
-			if (Set(IntNumber, DoubleNumber, BoolVal).contains(head.lexemeType)) {
+			if (Set(IntNumber, DoubleNumber, BoolVal, Name).contains(head.lexemeType)) {
 				stackCompute = head :: stackCompute
 			} else if (head.lexemeType == ArithmeticOp) {
-				val res = applyArithmeticOp(head)
+				val res = applyArithmeticOp(head, vars)
 				stackCompute = res :: stackCompute
 			} else if (head.lexemeType == BoolOp) {
-				val res = applyBoolOp(head)
+				val res = applyBoolOp(head, vars)
 				stackCompute = res :: stackCompute
 			}
 		}
@@ -609,7 +626,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 * Should be called if current lexeme is a Name
 	 * @return pair (variable name, its value) to be added to variables table
 	 */
-	private[my] def getVariable(): (String, Value) = {
+	private[my] def getVariable(vars: VarTable): (String, Value) = {
 		val varName = lexeme.get.value
 		var varType: Option[VarType.Value] = None
 		var varValue: Option[String] = None
@@ -639,7 +656,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		// '=' => look for a value
 		if (lexeme.get.lexemeType == LexemeType.DefineOp) {
 			nextLexemeCheckEmpty()
-			val value = compute()
+			val value = compute(vars)
 			varValue = value.value
 
 			if (varType.isEmpty) {
