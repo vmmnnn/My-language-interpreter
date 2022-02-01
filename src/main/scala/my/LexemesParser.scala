@@ -608,31 +608,6 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		var varType: Option[VarType.Value] = None
 		var varValue: Option[String] = None
 
-		def getValueCheckType(): Unit = {
-			//varValue = Option(lexeme.get.value)
-			varValue match {
-				case BoolVal if varType.get == VarType.Bool =>
-				case DoubleNumber if varType.get == VarType.Double =>
-				case IntNumber if varType.get == VarType.Int =>
-				case IntNumber if varType.get == VarType.Double =>
-				case LexemeType.String if varType.get == VarType.String =>
-				case _ => sendExpectedFoundError(f"Types do not match: ${varType.get}")
-			}
-		}
-
-		def getValueSetType(): Unit = {
-			/*if (!isValue(lexeme.get)) {
-				sendUnexpectedTokenError()
-			}
-			varValue = Option(lexeme.get.value)*/
-			varType = Option(lexeme.get.lexemeType match {
-				case BoolVal => VarType.Bool
-				case DoubleNumber => VarType.Double
-				case IntNumber => VarType.Int
-				case LexemeType.String => VarType.String
-			})
-		}
-
 		nextLexemeCheckEmpty()
 
 		// Colon after variable name => look for a type
