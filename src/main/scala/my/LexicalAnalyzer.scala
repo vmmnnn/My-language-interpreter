@@ -492,6 +492,7 @@ class LexemeTable {
 	def getLexemeIdx: Int = idxLexeme
 	def setLexemeIdx(newIdx: Int): Unit = {
 		idxLexeme = newIdx
+		currentLexeme = Option(table(newIdx))
 	}
 
 	/**
