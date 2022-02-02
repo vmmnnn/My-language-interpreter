@@ -627,4 +627,67 @@ class LexemesParserSuite extends FunSuite {
 
 		assert(sameVarTables(expected, globalVars))
 	}
+
+	test("change global var in while and if") {
+		val program = "x = 0;\n" +
+									"def main(): None {\n" +
+										"i = 10;\n" +
+										"while (i > 0;) {\n" +
+											"i = i - 1;\n" +
+											"if (x % 2 == 0;) {\n" +
+												"x = x + 1;\n" +
+											"} else {\n" +
+												"x = x + 3;\n" +
+											"}\n" +
+										"}\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar1: Value = new Value(VarType.Int, Option("20"))
+		expected.setVal("x", expectedVar1)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("change global var in 2 while structures") {
+		val program = "x = 100;\n" +
+									"y = 1;\n" +
+									"z = 50;\n" +
+									"def main(): None {\n" +
+										"while (x > 0;) {\n" +
+											"while (z > 0;) {\n" +
+												"y = y + 3;\n" +
+												"z = z - 17;\n" +
+											"}\n" +
+											"z = x;\n" +
+											"x = x - 20;\n" +
+										"}\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVarX: Value = new Value(VarType.Int, Option("0"))
+		val expectedVarY: Value = new Value(VarType.Int, Option("64"))
+		val expectedVarZ: Value = new Value(VarType.Int, Option("20"))
+		expected.setVal("x", expectedVarX)
+		expected.setVal("y", expectedVarY)
+		expected.setVal("z", expectedVarZ)
+
+		assert(sameVarTables(expected, globalVars))
+	}
 }

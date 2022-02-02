@@ -342,6 +342,17 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		var RPN: List[Lexeme] = List.empty
 		var stackCompute: List[Lexeme] = List.empty
 
+		def varToValue(name: String, vars: VarTable, lineNumber: Int): Value = {
+			var value = vars.getVal(name)
+			if (value.isEmpty) {
+				value = globalVars.getVal(name)
+				if (value.isEmpty) {
+					sendError(f"Variable $name is not defined", lineNumber)
+				}
+			}
+			value.get
+		}
+
 		def getOperand(vars: VarTable): Lexeme = {
 			var res = stackCompute.head
 			stackCompute = stackCompute.tail
@@ -563,6 +574,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			case DoubleNumber => new Value(VarType.Double, Option(result.value))
 			case BoolVal => new Value(VarType.Bool, Option(result.value))
 			case LexemeType.String => new Value(VarType.String, Option(result.value))
+			case Name => varToValue(result.value, vars, result.lineNumber)
 		}
 	}
 
