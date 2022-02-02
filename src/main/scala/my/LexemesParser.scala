@@ -132,6 +132,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			case "println" => runPrint(true, vars)
 			case "if" => runIf(vars)
 			case "while" => runWhile(vars)
+			case "for" => runFor(vars)
 			case _ if lexeme.get.lexemeType == Name => runName(vars)
 		}
 	}
@@ -238,6 +239,51 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		lexemeTable.setLexemeIdx(whileBlockLexemeIdx - 1)  // '{' for a while-block
 		lexeme = lexemeTable.next()
 		bracketsBalance()
+		nextLexemeCheckEmpty()
+	}
+
+	/**
+	 * Runs for-structure
+	 */
+	private[my] def runFor(vars: VarTable): Unit = {
+		checkNextLexemeValue("(")
+		checkNextLexemeType(Name, "variable name")
+		val iterationVariableName = lexeme.get.value
+
+		checkNextLexemeValue("from")
+		nextLexemeCheckEmpty()
+		val startValue = compute(vars)
+
+		checkNextLexemeValue("to")
+		nextLexemeCheckEmpty()
+		val finishValue = compute(vars)
+
+		nextLexemeCheckEmpty()
+		var stepValue = new Value(VarType.Int, Option("1"))
+		if (lexeme.get.value == "step") {
+			nextLexemeCheckEmpty()
+			stepValue = compute(vars)
+		}
+
+		checkNextLexemeValue(")")
+		checkNextLexemeValue("{")
+		val forBlockLexemeIdx = lexemeTable.getLexemeIdx
+
+		val oldValue = vars.getVal(iterationVariableName)
+		if (oldValue.isDefined) {
+			if (oldValue.get.varType != VarType.Int) {
+				sendError(f"Variable $iterationVariableName is already defined and its type is not Int", lexeme.get.lineNumber)
+			}
+		}
+
+		for (i <- startValue.value.get.toInt until finishValue.value.get.toInt by stepValue.value.get.toInt) {
+			vars.setVal(iterationVariableName, new Value(VarType.Int, Option(i.toString)))
+			lexemeTable.setLexemeIdx(forBlockLexemeIdx)
+			lexeme = lexemeTable.next()
+			while (lexeme.get.value != "}") {
+				runBlock(vars)
+			}
+		}
 		nextLexemeCheckEmpty()
 	}
 

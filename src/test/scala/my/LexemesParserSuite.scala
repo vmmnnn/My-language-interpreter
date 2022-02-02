@@ -690,4 +690,52 @@ class LexemesParserSuite extends FunSuite {
 
 		assert(sameVarTables(expected, globalVars))
 	}
+
+	test("change global var in for loop") {
+		val program = "x = 3;\n" +
+									"def main(): None {\n" +
+										"for (i from 0; to 10; step 2;) {\n" +
+											"x = x + i;" +
+										"}\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("23"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("change global var in 2 for loops") {
+		val program = "x = 0;\n" +
+									"def main(): None {\n" +
+										"for (i from 0; to 10;) {\n" +
+											"for (j from 0; to 10;) {\n" +
+												"x = x + 1;" +
+											"}\n" +
+										"}\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("100"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
 }
