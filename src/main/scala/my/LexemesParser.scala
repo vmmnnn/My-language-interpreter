@@ -70,6 +70,10 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	// table of functions: name, 'def'-lexeme position in LexemeTable
 	private val functionTable: Map[String, Int] = Map.empty
 
+	// stacks for function calls
+	private var backAddressesStack: List[Int] = List.empty
+	private var parameters: List[Value] = List.empty
+
 	private val priorityOp: Map[String, Int] = Map(
 		"not" -> 0,
 		"*" -> 1, "/" -> 1, "%" -> 1,
@@ -107,19 +111,54 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 */
 	def run(mainFunction: String = "main"): Unit = {
 		// table with local variables
-		val vars = new VarTable
-
 		val mainFunctionLexemeIdx = functionTable.get(mainFunction)
 		if (mainFunctionLexemeIdx.isEmpty) {
 			sendError(f"No function with name $mainFunction is provided", lexemeTable.size)
 		}
+		runFunction(mainFunctionLexemeIdx.get)
+		/*
 		lexemeTable.setLexemeIdx(mainFunctionLexemeIdx.get)
 		lexeme = lexemeTable.current
 		checkMainHeader()
 		nextLexemeCheckEmpty()
 		while (lexeme.get.value != "}") {
 			runBlock(vars)
+		}*/
+	}
+
+	/**
+	 * Parses return statement and gets the value returned
+	 * @param vars variable table
+	 * @return value from the return statement
+	 */
+	private[my] def getReturnedValue(vars: VarTable): Option[Value] = {
+		nextLexemeCheckEmpty()
+		if (lexeme.get.value == "None") {
+			None
+		} else {
+			Option(compute(vars))
 		}
+	}
+
+	/**
+	 * Runs function that starts from lexemeIdx
+	 * @param lexemeIdx index in lexemeTable for function that should be run
+	 * @return value that function returned
+	 */
+	private[my] def runFunction(lexemeIdx: Int): Option[Value] = {
+		val vars = new VarTable
+		lexemeTable.setLexemeIdx(lexemeIdx)
+		lexeme = lexemeTable.current
+		checkMainHeader()
+		nextLexemeCheckEmpty()
+		var result: Option[Value] = None
+		while (lexeme.get.value != "}" & lexeme.get.value != "return") {
+			runBlock(vars)
+		}
+		if (lexeme.get.value == "return") {
+			result = getReturnedValue(vars)
+		}
+		result
 	}
 
 	/**
@@ -145,7 +184,8 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		val name = lexeme.get.value
 		nextLexemeCheckEmpty()
 		if (lexeme.get.value == "(") {   // function call
-			// TODO: function calls
+			nextLexemeCheckEmpty()
+			runFunctionCall(name, vars)
 		} else if (lexeme.get.lexemeType == DefineOp) { // variable
 			nextLexemeCheckEmpty()
 			val expressionResult = compute(vars)
@@ -154,6 +194,29 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			sendUnexpectedTokenError()
 		}
 		nextLexemeCheckEmpty()
+	}
+
+	/**
+	 * Runs function call<br>
+	 * Should be called when current lexeme is the first parameter or a ')' if no parameters are given
+	 */
+	private[my] def runFunctionCall(name: String, vars: VarTable): Option[Value] = {
+		val functionLexemeIdx = functionTable.get(name)
+		if (functionLexemeIdx.isEmpty) {
+			sendError(f"No function $name found", lexeme.get.lineNumber)
+		}
+
+		// parse function parameters
+		while (lexeme.get.value != ")") {
+			// TODO: add parameters
+		}
+
+		backAddressesStack = backAddressesStack :+ lexemeTable.getLexemeIdx
+		val result = runFunction(functionLexemeIdx.get)
+		lexemeTable.setLexemeIdx(backAddressesStack.head)
+		backAddressesStack = backAddressesStack.tail
+
+		result
 	}
 
 	/**

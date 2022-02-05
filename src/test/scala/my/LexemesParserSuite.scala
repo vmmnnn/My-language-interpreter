@@ -738,4 +738,37 @@ class LexemesParserSuite extends FunSuite {
 
 		assert(sameVarTables(expected, globalVars))
 	}
+
+	test("change global var in function with no parameters") {
+		val program = "x = 1;\n" +
+									"def xMult2(): None {\n" +
+										"x = x * 2;\n" +
+									"}\n" +
+									"def xMult3(): None {\n" +
+										"x = x * 3;\n" +
+									"}\n" +
+									"def xMult5(): None {\n" +
+										"x = x * 5;\n" +
+									"}\n" +
+									"def main(): None {\n" +
+										"xMult2()\n" +
+										"xMult3()\n" +
+										"xMult2()\n" +
+										"xMult5()\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("60"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
 }
