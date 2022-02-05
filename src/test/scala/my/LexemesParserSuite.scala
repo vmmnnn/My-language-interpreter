@@ -739,6 +739,30 @@ class LexemesParserSuite extends FunSuite {
 		assert(sameVarTables(expected, globalVars))
 	}
 
+	test("change global var in function") {
+		val program = "x = 1;\n" +
+									"def f1(p: Int): Int {\n" +
+										"return x + p * 2;\n" +
+									"}\n" +
+									"def main(): None {\n" +
+										"x = f1(5+5;) + f1(x)\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("24"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
 	test("change global var in function with no parameters") {
 		val program = "x = 1;\n" +
 									"def xMult2(): None {\n" +
@@ -767,6 +791,35 @@ class LexemesParserSuite extends FunSuite {
 
 		val expected: VarTable = new VarTable
 		val expectedVar: Value = new Value(VarType.Int, Option("60"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("change global var in function with parameters") {
+		val program = "x = 1;\n" +
+									"def xMultN(n: Int): None {\n" +
+										"x = x * n;\n" +
+									"}\n" +
+									"def xMultNPlusM(n: Int, m: Int): None {\n" +
+										"x = x * n + m;\n" +
+									"}\n" +
+									"def main(): None {\n" +
+										"xMultN(10;)\n" +
+										"xMultNPlusM(1+1;, 7;)\n" +
+										"xMultN(x;)\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("729"))
 		expected.setVal("x", expectedVar)
 
 		assert(sameVarTables(expected, globalVars))

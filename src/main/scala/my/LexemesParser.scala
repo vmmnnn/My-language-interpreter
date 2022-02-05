@@ -115,15 +115,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		if (mainFunctionLexemeIdx.isEmpty) {
 			sendError(f"No function with name $mainFunction is provided", lexemeTable.size)
 		}
-		runFunction(mainFunctionLexemeIdx.get)
-		/*
-		lexemeTable.setLexemeIdx(mainFunctionLexemeIdx.get)
-		lexeme = lexemeTable.current
-		checkMainHeader()
-		nextLexemeCheckEmpty()
-		while (lexeme.get.value != "}") {
-			runBlock(vars)
-		}*/
+		runFunction(mainFunctionLexemeIdx.get, true)
 	}
 
 	/**
@@ -141,23 +133,82 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	}
 
 	/**
+	 * Parse parameters and makes varTable with them
+	 * @return return type and variables table
+	 */
+	private[my] def parseFunctionHeader(): (VarType.Value, VarTable) = {
+		val vars = new VarTable
+		nextLexemeCheckEmpty()
+
+		while (lexeme.get.value != ")") {
+			checkNextLexemeType(Name, "variable name")
+			val name = lexeme.get.value
+			checkNextLexemeType(Colon, "colon")
+			checkNextLexemeType(Type, "parameter type")
+			val expectedType = lexeme.get.value  // what type we expect to get
+
+			val correspondingValue = parameters.head  // what was send as a parameter value
+			parameters = parameters.tail
+
+			if ((expectedType == "Int" & correspondingValue.varType != VarType.Int) |
+				(expectedType == "Double" & (correspondingValue.varType != VarType.Int & correspondingValue.varType != VarType.Double)) |
+				(expectedType == "String" & correspondingValue.varType != VarType.String) |
+				(expectedType == "Bool" & correspondingValue.varType != VarType.Bool)
+			) {
+				sendParameterTypesMismatchesError(expectedType, correspondingValue.varType.toString)
+			}
+
+			val finalType = VarType.getType(expectedType)
+			vars.setVal(name, new Value(finalType, correspondingValue.value))
+
+			nextLexemeCheckEmpty()
+		}
+
+		checkNextLexemeType(Colon, "Function type")
+		nextLexemeCheckEmpty()
+		val returnType = lexeme.get.value
+
+		checkNextLexemeValue("{")
+
+		(VarType.getType(returnType), vars)
+	}
+
+	/**
 	 * Runs function that starts from lexemeIdx
 	 * @param lexemeIdx index in lexemeTable for function that should be run
 	 * @return value that function returned
 	 */
-	private[my] def runFunction(lexemeIdx: Int): Option[Value] = {
-		val vars = new VarTable
+	private[my] def runFunction(lexemeIdx: Int, mainFunction: Boolean = false): Option[Value] = {
 		lexemeTable.setLexemeIdx(lexemeIdx)
 		lexeme = lexemeTable.current
-		checkMainHeader()
+
+		// get function parameters
+		val funcInfo = if (mainFunction) {
+			checkMainHeader()
+			(VarType.None, new VarTable)
+		} else {
+			parseFunctionHeader()
+		}
+		val returnType = funcInfo._1
+		val vars = funcInfo._2
+
+		// run function
 		nextLexemeCheckEmpty()
 		var result: Option[Value] = None
 		while (lexeme.get.value != "}" & lexeme.get.value != "return") {
 			runBlock(vars)
 		}
+
+		// get returned value and check its type
 		if (lexeme.get.value == "return") {
 			result = getReturnedValue(vars)
 		}
+		if (result.isDefined) {
+			if (result.get.varType != returnType) {
+				sendError(f"Expected ${returnType.toString} type returned, but ${result.get.varType} found", lexeme.get.lineNumber)
+			}
+		}
+
 		result
 	}
 
@@ -208,7 +259,12 @@ class LexemesParser(lexemeTable: LexemeTable) {
 
 		// parse function parameters
 		while (lexeme.get.value != ")") {
-			// TODO: add parameters
+			val parameter = compute(vars)
+			nextLexemeCheckEmpty()
+			parameters = parameters :+ parameter
+			if (lexeme.get.lexemeType == LexemeType.Comma) {  // next parameter should be gained
+				nextLexemeCheckEmpty()
+			}
 		}
 
 		backAddressesStack = backAddressesStack :+ lexemeTable.getLexemeIdx
@@ -736,6 +792,15 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	 */
 	private[my] def sendExpectedFoundError(expected: String): Unit = {
 		sendError(f"$expected expected, but ${lexeme.get.value} found", lexeme.get.lineNumber)
+	}
+
+	/**
+	 * Sends "Parameter types mismatched: '...' expected, but '...' found" message
+	 * @param expected what was expected
+	 * @param found what was found
+	 */
+	private[my] def sendParameterTypesMismatchesError(expected: String, found: String): Unit = {
+		sendError(f"Parameter types mismatched: $expected expected, but $found found found", lexeme.get.lineNumber)
 	}
 
 	/**
