@@ -7,18 +7,18 @@ def sum(): Int {
 
 def main(): None {
 	counter = read();
-	for i from 0 to 50 step 5 {
+	for (i from 0; to 50; step 5;) {
 		counter = counter + i;
 	}
-	if (sum() % 2 == 0) {
-		print("even");
+	if (sum() % 2 == 0;) {
+		print("even")
 	} else {
-		print("odd");
+		print("odd")
 	}
-	printC(offset);
+	printC(offset;)
 }
 
 def printC(n: Int): None {
-	print(n);
-	print("Counter = ", counter);
+	print(n;)
+	print(counter;)
 }
