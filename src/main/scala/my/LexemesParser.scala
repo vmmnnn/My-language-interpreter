@@ -427,7 +427,11 @@ class LexemesParser(lexemeTable: LexemeTable) {
 	private[my] def runPrint(newLine: Boolean, vars: VarTable): Unit = {
 		checkNextLexemeValue("(")
 		nextLexemeCheckEmpty()
-		val printValue = compute(vars)
+		val printValue = if (lexeme.get.lexemeType == LexemeType.String) {
+			new Value(VarType.String, Option(lexeme.get.value))
+		} else {
+			compute(vars)
+		}
 		print(printValue.value.get)
 		if (newLine) print("\n")
 

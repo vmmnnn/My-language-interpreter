@@ -11,7 +11,7 @@ object Main extends Serializable {
 		}
 		val program = fromFile(fileName).mkString
 
-		val interpreter = new Interpreter(program)
+		new Interpreter(program)
 			.parse()
 			.run()
 	}
