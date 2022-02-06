@@ -250,12 +250,70 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			runFunctionCall(name, vars)
 		} else if (lexeme.get.lexemeType == DefineOp) { // variable
 			nextLexemeCheckEmpty()
-			val expressionResult = compute(vars)
+			val expressionResult = if (lexeme.get.value == "read") {
+				runRead(name, vars)
+			} else {
+				compute(vars)
+			}
 			runDefineOp(name, expressionResult, vars)
 		} else {
 			sendUnexpectedTokenError()
 		}
 		nextLexemeCheckEmpty()
+	}
+
+	/**
+	 * Reads value from input
+	 * @return value from input
+	 */
+	private[my] def runRead(varName: String, vars: VarTable): Value = {
+
+		/**
+		 * Checks if strValue is Int, Double or String
+		 * @param strValue value in a String format
+		 * @return VarType: Int, Double or String
+		 */
+		def getType(strValue: String): VarType.Value = {
+			var nDots = 0
+			strValue.foreach(s => {
+				if (s == '.') {
+					if (nDots != 0) return VarType.String
+					nDots += 1
+				}
+				if (s.isLetter) return VarType.String
+			})
+			if (nDots == 1) return VarType.Double
+			VarType.Int
+		}
+
+		checkNextLexemeValue("(")
+		checkNextLexemeValue(")")
+		checkNextLexemeValue(";")
+
+		val strValue = scala.io.StdIn.readLine("> ")
+		var varType: Option[VarType.Value] = None
+		var variable = vars.getVal(varName)
+		if (variable.isEmpty) {
+			variable = globalVars.getVal(varName)
+			if (variable.isDefined) {
+				varType = Option(variable.get.varType)
+			}
+		} else {
+			varType = Option(variable.get.varType)
+		}
+
+		if (varType.isEmpty) {  // no type => we will decide what type to give
+			if (strValue == "True" | strValue == "False") { // Boolean
+				new Value(VarType.Bool, Option(strValue))
+			} else if (strValue(0).isLetter) { // consider strValue as a string
+				new Value(VarType.String, Option(strValue))
+			} else {
+				val getTypeResult = getType(strValue)
+				new Value(getTypeResult, Option(strValue))
+			}
+		} else {
+			new Value(varType.get, Option(strValue))
+		}
 	}
 
 	/**
