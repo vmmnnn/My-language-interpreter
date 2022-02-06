@@ -52,7 +52,7 @@ class VarTable {
 	}
 
 	def print(): Unit = {
-		table.foreach{case (_, variable) => println(variable)}
+		table.foreach{case (name, value) => println(name + ": " + value)}
 	}
 }
 
@@ -128,20 +128,27 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		if (lexeme.get.value == "None") {
 			None
 		} else {
-			Option(compute(vars))
+			val res = Option(compute(vars))
+			nextLexemeCheckEmpty()
+			res
 		}
 	}
 
 	/**
-	 * Parse parameters and makes varTable with them
+	 * Parse parameters and makes varTable with them<br>
+	 * Should be called when the next lexeme is '('
 	 * @return return type and variables table
 	 */
 	private[my] def parseFunctionHeader(): (VarType.Value, VarTable) = {
 		val vars = new VarTable
-		nextLexemeCheckEmpty()
+		checkNextLexemeValue("(")
+		nextLexemeCheckEmpty() // either ')' or variable name
 
 		while (lexeme.get.value != ")") {
-			checkNextLexemeType(Name, "variable name")
+			if (lexeme.get.lexemeType != Name) {
+				sendExpectedFoundError("variable name")
+			}
+			//checkNextLexemeType(Name, "variable name")
 			val name = lexeme.get.value
 			checkNextLexemeType(Colon, "colon")
 			checkNextLexemeType(Type, "parameter type")
@@ -162,6 +169,9 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			vars.setVal(name, new Value(finalType, correspondingValue.value))
 
 			nextLexemeCheckEmpty()
+			if (lexeme.get.lexemeType == Comma) {
+				nextLexemeCheckEmpty()
+			}
 		}
 
 		checkNextLexemeType(Colon, "Function type")
@@ -192,7 +202,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		val returnType = funcInfo._1
 		val vars = funcInfo._2
 
-		// run function
+		// run function (lexeme here is '{')
 		nextLexemeCheckEmpty()
 		var result: Option[Value] = None
 		while (lexeme.get.value != "}" & lexeme.get.value != "return") {
@@ -202,6 +212,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		// get returned value and check its type
 		if (lexeme.get.value == "return") {
 			result = getReturnedValue(vars)
+			nextLexemeCheckEmpty()
 		}
 		if (result.isDefined) {
 			if (result.get.varType != returnType) {
@@ -382,9 +393,12 @@ class LexemesParser(lexemeTable: LexemeTable) {
 		if (lexeme.get.value == "step") {
 			nextLexemeCheckEmpty()
 			stepValue = compute(vars)
+			nextLexemeCheckEmpty()
 		}
 
-		checkNextLexemeValue(")")
+		if (lexeme.get.value != ")") {
+			sendExpectedFoundError(")")
+		}
 		checkNextLexemeValue("{")
 		val forBlockLexemeIdx = lexemeTable.getLexemeIdx
 
@@ -470,6 +484,29 @@ class LexemesParser(lexemeTable: LexemeTable) {
 			nextLexemeCheckEmpty()
 		}
 
+		def processFunctionCall(): Unit = {
+			val name = lexeme.get.value
+			val lineNumber = lexeme.get.lineNumber
+			checkNextLexemeValue("(")
+			nextLexemeCheckEmpty()
+			val value = runFunctionCall(name, vars)
+
+			if (value.get.varType == VarType.None) {
+				sendError("Value expected, but None found", lineNumber)
+			}
+
+			val lexemeType = value.get.varType match {
+				case VarType.Int => LexemeType.IntNumber
+				case VarType.Double => LexemeType.DoubleNumber
+				case VarType.Bool => LexemeType.BoolVal
+				case VarType.String => LexemeType.String
+			}
+
+			val lexemeToAdd = new Lexeme(value.get.value.get, lexemeType, lineNumber)
+			RPN = RPN :+ lexemeToAdd
+			nextLexemeCheckEmpty()
+		}
+
 		def addToStackOp(): Unit = {
 			stackOp = lexeme.get :: stackOp
 			nextLexemeCheckEmpty()
@@ -481,6 +518,7 @@ class LexemesParser(lexemeTable: LexemeTable) {
 				case IntNumber | DoubleNumber | BoolVal => addToRPN()
 				case Name if (vars.getVal(lexeme.get.value).isDefined) => addToRPN()
 				case Name if (globalVars.getVal(lexeme.get.value).isDefined) => addToRPN()
+				case Name if (functionTable.get(lexeme.get.value).isDefined) => processFunctionCall()
 				case Brackets if (lexeme.get.value == "(") => addToStackOp()
 				case Brackets if (lexeme.get.value == ")") => moveToRPN()
 				case BoolOp | ArithmeticOp => processOp()

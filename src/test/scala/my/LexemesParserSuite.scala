@@ -186,8 +186,6 @@ class LexemesParserSuite extends FunSuite {
 		expected.setVal("x", expectedVar1)
 		expected.setVal("fl", expectedVar2)
 
-		globalVars.print()
-
 		assert(sameVarTables(expected, globalVars))
 	}
 
@@ -745,7 +743,7 @@ class LexemesParserSuite extends FunSuite {
 										"return x + p * 2;\n" +
 									"}\n" +
 									"def main(): None {\n" +
-										"x = f1(5+5;) + f1(x)\n" +
+										"x = f1(5+5;) + f1(x;);\n" +
 									"}"
 
 		val lexicalAnalyzer = new LexicalAnalyzer
@@ -763,7 +761,7 @@ class LexemesParserSuite extends FunSuite {
 		assert(sameVarTables(expected, globalVars))
 	}
 
-	test("change global var in function with no parameters") {
+	test("change global var in functions with no parameters") {
 		val program = "x = 1;\n" +
 									"def xMult2(): None {\n" +
 										"x = x * 2;\n" +
@@ -796,7 +794,31 @@ class LexemesParserSuite extends FunSuite {
 		assert(sameVarTables(expected, globalVars))
 	}
 
-	test("change global var in function with parameters") {
+	test("change global var in function with no parameters") {
+		val program = "x = 1;\n" +
+									"def xMult2(): None {\n" +
+										"x = x * 2;\n" +
+									"}\n" +
+									"def main(): None {\n" +
+										"xMult2()\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("2"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("change global var in functions with parameters") {
 		val program = "x = 1;\n" +
 									"def xMultN(n: Int): None {\n" +
 										"x = x * n;\n" +
@@ -820,6 +842,55 @@ class LexemesParserSuite extends FunSuite {
 
 		val expected: VarTable = new VarTable
 		val expectedVar: Value = new Value(VarType.Int, Option("729"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("change global var in expressions with functions") {
+		val program = "x = 1;\n" +
+									"def mult(num: Int, n: Int): Int {\n" +
+										"return num*n;\n" +
+									"}\n" +
+									"def main(): None {\n" +
+										"y = mult(x;, 2;) + mult(3*x;, 3;);\n" +
+										"x = mult(y;, 2;);" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("22"))
+		expected.setVal("x", expectedVar)
+
+		assert(sameVarTables(expected, globalVars))
+	}
+
+	test("change global var in expression with function") {
+		val program = "x = 1;\n" +
+									"def mult(num: Int, n: Int): Int {\n" +
+										"return num*n;\n" +
+									"}\n" +
+									"def main(): None {\n" +
+										"x = mult(2;, 3;);\n" +
+									"}"
+
+		val lexicalAnalyzer = new LexicalAnalyzer
+		lexicalAnalyzer.run(program)
+
+		val lexemesParser = new LexemesParser(lexicalAnalyzer.lexemesTable)
+		lexemesParser.parse().run()
+
+		val globalVars = lexemesParser.getGlobalVars
+
+		val expected: VarTable = new VarTable
+		val expectedVar: Value = new Value(VarType.Int, Option("6"))
 		expected.setVal("x", expectedVar)
 
 		assert(sameVarTables(expected, globalVars))
